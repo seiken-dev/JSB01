@@ -1,2 +1,2 @@
-idf_component_register(SRCS "Stargazer.cpp mb10x.cpp"
+idf_component_register(SRCS "Stargazer.cpp"
                     INCLUDE_DIRS ".")

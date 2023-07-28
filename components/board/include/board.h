@@ -1,6 +1,8 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 #include "esp_err.h"
+#include "driver/gpio.h"
+#include "soc/gpio_num.h"
 
 // Pin definitions
 
@@ -15,30 +17,29 @@
 class MainBoard {
  public:
   esp_err_t init();
-  static const uint8_t TX = 21;
-  static const uint8_t RX = 20;
-  
-  static const uint8_t SDA = 6;
-  static const uint8_t SCL = 7;
-  static const uint8_t SS    = 20;
-  static const uint8_t MOSI  = 10;
-  static const uint8_t MISO  = 9;
-  static const uint8_t SCK   = 8;
-  static const uint8_t A0 = 2;
-  static const uint8_t A1 = 3;
-  static const uint8_t A2 = 4;
-  static const uint8_t A3 = 5;
-  static const uint8_t D0 = 2;
-  static const uint8_t D1 = 3;
-  static const uint8_t D2 = 4;
-  static const uint8_t D3 = 5;
-  static const uint8_t D4 = 6;
-  static const uint8_t D5 = 7;
-  static const uint8_t D6 = 21;
-  static const uint8_t D7 = 20;
-  static const uint8_t D8 = 8;
-  static const uint8_t D9 = 9;
-  static const uint8_t D10 = 10;
+  static const gpio_num_t TX = GPIO_NUM_21;
+  static const gpio_num_t RX = GPIO_NUM_20;
+  static const gpio_num_t SDA = GPIO_NUM_6;
+  static const gpio_num_t SCL = GPIO_NUM_7;
+  static const gpio_num_t SS    = GPIO_NUM_20;
+  static const gpio_num_t MOSI  = GPIO_NUM_10;
+  static const gpio_num_t MISO  = GPIO_NUM_9;
+  static const gpio_num_t SCK   = GPIO_NUM_8;
+  static const gpio_num_t A0 = GPIO_NUM_2;
+  static const gpio_num_t A1 = GPIO_NUM_3;
+  static const gpio_num_t A2 = GPIO_NUM_4;
+  static const gpio_num_t A3 = GPIO_NUM_5;
+  static const gpio_num_t D0 = GPIO_NUM_2;
+  static const gpio_num_t D1 = GPIO_NUM_3;
+  static const gpio_num_t D2 = GPIO_NUM_4;
+  static const gpio_num_t D3 = GPIO_NUM_5;
+  static const gpio_num_t D4 = GPIO_NUM_6;
+  static const gpio_num_t D5 = GPIO_NUM_7;
+  static const gpio_num_t D6 = GPIO_NUM_21;
+  static const gpio_num_t D7 = GPIO_NUM_20;
+  static const gpio_num_t D8 = GPIO_NUM_8;
+  static const gpio_num_t D9 = GPIO_NUM_9;
+  static const gpio_num_t D10 = GPIO_NUM_10;
 };
 extern MainBoard xiao_c3;
 #endif

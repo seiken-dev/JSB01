@@ -1,2 +1,4 @@
 .cache/
 build/
+.pio
+compile_commands.json

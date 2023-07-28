@@ -1,248 +1,38 @@
 #include <Arduino.h>
-#include "mydefs.h"
+#include <cstdint>
+constexpr uint8_t pin_sonar = D5;
+constexpr uint8_t pin_button1 = D0;
+constexpr uint8_t pin_button2 = D1;
+constexpr uint8_t pin_vibe = D2;
 
-#ifdef TOF_SENSOR
-bool TOF_init();
-int16_t TOF_distance();
-void TOF_setFOV(bool isWide = true);
+constexpr uint8_t flash_ms = 10;
 
-#define LONGPRESS_MS 1000
-#endif // TOF_SENSOR
-
-//#define DEBUG_SERIAL
-//#define XIAO_RP2040
-//#define AT_TINY
-
-#ifdef XIAO_RP2040
-#undef PIN_LED
-#define PIN_LED PIN_LED_G
-#define LED_ON LOW
-#define LED_OFF HIGH
-#else
-#define LED_ON HIGH
-#define LED_OFF LOW
-#endif
-
-#ifdef XIAO_RP2040
-#define PIN_SONAR D5
-#define PIN_BUTTON1 D0
-#define PIN_BUTTON2 D1
-#define PIN_VIB D2
-#endif
-#ifdef AT_TINY
-#define PIN_SONAR PIN_PA2
-#define PIN_BUTTON1 PIN_PA6
-#define PIN_BUTTON2 PIN_PA7
-#define PIN_VIB PIN_PA3
-#endif
-
-#define TIMEOUT (500 * 1000)
-
-#define RANGE_MIN 1
-#define RANGE_MAX 5
-#define RANGE_DEFAULT 3
-
-#define FLASH_MS 20
-#define FLASH_RATIO 4
-
-void flash(uint16_t ms = FLASH_MS) {
-#ifdef PIN_LED
-	digitalWrite(PIN_LED, LED_ON);
-#endif
-    digitalWrite(PIN_VIB, HIGH);
-	delay(ms);
-#ifdef PIN_LED
-	digitalWrite(PIN_LED, LED_OFF);
-#endif
-    digitalWrite(PIN_VIB, LOW);
+void flash(uint16_t ms = flash_ms) {
+  digitalWrite(pin_vibe, HIGH);
+  delay(ms);
+  digitalWrite(pin_vibe, LOW);
 }
-
-bool buttonPressed(uint8_t pin, bool& btn) {
-	bool b = digitalRead(pin) == LOW;
-	if (!btn && b) {
-		btn = true;
-		return true;
-	}
-	btn = b;
-	return false;
-}
-
-#ifdef TOF_SENSOR
-bool buttonLongPressed(uint8_t pin, unsigned long& btnTick) {
-	bool b = digitalRead(pin) == LOW;
-	if (b) {
-		unsigned long t = millis();
-		if (btnTick == 0) {
-			btnTick = t;
-		} else if (btnTick > 1 && t - btnTick >= LONGPRESS_MS) {
-			btnTick = 1;
-			return true;
-		}
-	} else {
-		btnTick = 0;
-	}
-	return false;
-}
-#endif // TOF_SENSOR
-
-enum Sonar {
-	NONE, MB10x0, MB10x3, TOF
-};
-Sonar sonar = Sonar::NONE;
-
-#ifdef DEBUG_SERIAL
-static const char* sonarNames[] = { "NONE", "MB10x0", "MB10x3", "VL53L1X" };
-#endif
 
 void setup() {
-	Serial_begin();
-	Serial_println("start");
-
-#ifdef XIAO_RP2040
-	pinMode(NEOPIXEL_POWER, OUTPUT);
-	digitalWrite(NEOPIXEL_POWER, HIGH);
-	pinMode(PIN_LED_R, OUTPUT);
-	pinMode(PIN_LED_G, OUTPUT);
-	pinMode(PIN_LED_B, OUTPUT);
-    digitalWrite(PIN_LED_R, LED_OFF);
-    digitalWrite(PIN_LED_G, LED_OFF);
-    digitalWrite(PIN_LED_B, LED_OFF);
-#else
-  #ifdef PIN_LED
-    pinMode(PIN_LED, OUTPUT);
-  #endif
-#endif
-
-	pinMode(PIN_SONAR, INPUT);
-	pinMode(PIN_BUTTON1, INPUT_PULLUP);
-	pinMode(PIN_BUTTON2, INPUT_PULLUP);
-	pinMode(PIN_VIB, OUTPUT);
-	delay(400); // wait USB Serial
-
-	Serial_print("detect sonar...");
-
-	uint32_t value = (uint32_t)pulseIn(PIN_SONAR, HIGH, TIMEOUT);
-	if (value != 0) {
-		delay(20);
-		unsigned long t = millis();
-		pulseIn(PIN_SONAR, HIGH, TIMEOUT);
-		uint32_t interval = (uint32_t)(millis() - t);
-		if (interval > 20) {
-			sonar = interval < 60 ? Sonar::MB10x0 : Sonar::MB10x3; // MB10x0:20Hz, MB10x3:10Hz
-		}
-	} else {
-#ifdef TOF_SENSOR
-		if (TOF_init()) {
-			sonar = Sonar::TOF;
-		}
-#endif
-	}
-
-	Serial_printf("%s\n", sonarNames[sonar]);
-
-	if (sonar != Sonar::NONE) {
-		flash();
-	    delay(200);
-		flash();
-	} else {
-		flash();
-	    delay(500);
-		flash();
-	    delay(500);
-		flash();
-#ifdef XIAO_RP2040
-	    digitalWrite(PIN_LED_R, LED_ON);
-#endif
-	}
-    delay(500);
+  Serial.begin(115200);
+  delay(500);
+  Serial.println("start");
+  pinMode(pin_sonar, INPUT);
+  pinMode(pin_button1, INPUT_PULLUP);
+  pinMode(pin_button2, INPUT_PULLUP);
+  pinMode(pin_vibe, OUTPUT);
+  delay(400); // wait USB Serial
+  flash();;
+  delay(100);
+  flash();
 }
 
-#define MIN_DELAY 50
-
+uint16_t ranging()
+{
+  uint32_t time = pulseIn(pin_sonar, HIGH, 200*1000);
+  return (time > 10*147) ? uint16_t(time/147) : 0;
+}
 void loop() {
-	static unsigned long startTick = 0;
-	static uint32_t elapse = 0;
-	static uint16_t maxRange = RANGE_DEFAULT;
-	static bool btn1 = false;
-	static bool btn2 = false;
-#ifdef TOF_SENSOR
-	static unsigned long btn1Tick = 0;
-	static unsigned long btn2Tick = 0;
-#endif
-	unsigned long t = millis();
-
-	if (elapse != 0 && t - startTick >= elapse) {
-		flash();
-		startTick = t;
-	}
-
-#ifdef TOF_SENSOR
-	if (sonar == Sonar::TOF) {
-		if (buttonLongPressed(PIN_BUTTON1, btn1Tick)) {
-			TOF_setFOV(true);
-			Serial_println("ROI 16x16");
-			flash(30);
-			delay(100);
-			flash(100);
-			delay(500);
-		}
-		if (buttonLongPressed(PIN_BUTTON2, btn2Tick)) {
-			TOF_setFOV(false);
-			Serial_println("ROI 4x4");
-			flash(30);
-			delay(100);
-			flash(30);
-			delay(500);
-		}
-	}
-#endif
-
-	int8_t updown = 0;
-	if (buttonPressed(PIN_BUTTON1, btn1)) {
-		updown = 1;
-	} else if (buttonPressed(PIN_BUTTON2, btn2)) {
-		updown = -1;
-	}
-	if (updown != 0) {
-		maxRange += updown;
-		if (maxRange < RANGE_MIN) {
-			maxRange = RANGE_MIN;
-		} else if (maxRange > RANGE_MAX) {
-			maxRange = RANGE_MAX;
-		}
-		Serial_printf("max range=%dM\n", maxRange);
-		for (int i = 0; i < maxRange; i++) {
-			flash(30);
-			delay(200);
-		}
-		delay(500);
-	}
-
-	int32_t distance;
-#ifdef TOF_SENSOR
-	if (sonar == Sonar::TOF) {
-		distance = TOF_distance();
-	} else {
-#endif
-	distance = (int32_t)pulseIn(PIN_SONAR, HIGH, TIMEOUT);
-#ifdef TOF_SENSOR
-	}
-#endif
-	if (sonar == Sonar::MB10x0) {
-		distance = distance * 24 / 139; // ≒ / 147.f * 25.4f
-	}
-
-	uint32_t d = (uint32_t)(millis() - t);
-
-	if (distance <= 0 || distance >= maxRange * 1000) {
-		elapse = 0;
-		Serial_println(distance);
-	} else {
-		elapse = distance / FLASH_RATIO;
-		Serial_printf("%d T=%dms (%d)\n", distance, elapse, d);
-	}
-
-	if (d < MIN_DELAY) {
-		delay(MIN_DELAY - d);
-	}
+  uint16_t distance = ranging();
+  if (distance < 80) flash();
 }

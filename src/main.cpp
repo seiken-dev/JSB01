@@ -1,6 +1,5 @@
-#include "SerialUSB.h"
 #include <Arduino.h>
-#include <cstdint>
+
 constexpr uint8_t pin_sonar = D5;
 constexpr uint8_t pin_button1 = D0;
 constexpr uint8_t pin_button2 = D1;
@@ -8,7 +7,7 @@ constexpr uint8_t pin_vibe = D2;
 
 constexpr uint8_t flash_ms = 10;
 
-static uint16_t detectRange=2000;
+uint16_t detectRange=2000;
 bool changedDetectRange = false;
 
 void flash(uint16_t ms = flash_ms) {
@@ -16,25 +15,48 @@ void flash(uint16_t ms = flash_ms) {
   delay(ms);
   digitalWrite(pin_vibe, LOW);
 }
+enum MB_Type {
+  MB10X0,
+  MB10X3,
+  None,
+};
+MB_Type sonarType = MB10X0;
+
+MB_Type detectMBType() {
+  uint f, s;
+  if (pulseInLong(pin_sonar, HIGH)) {
+    f = millis();
+  }
+  if(f && pulseInLong(pin_sonar, HIGH)) {
+    s = millis();
+  }
+  return (s-f < 70) ? MB10X0 : MB10X3;
+}
+  
+uint16_t ranging(MB_Type type)
+{
+  uint32_t time = pulseIn(pin_sonar, HIGH, 200*1000);
+  if (type == MB10X0) {
+    time = time / 145 * 25;
+  }
+  Serial.printf("%lu\n", time);
+  return (time > 300) ? time : 0;
+}
 
 void setup() {
   Serial.begin(115200);
-  delay(500);
+  delay(1000);
   Serial.println("start");
   pinMode(pin_sonar, INPUT);
   pinMode(pin_button1, INPUT_PULLUP);
   pinMode(pin_button2, INPUT_PULLUP);
   pinMode(pin_vibe, OUTPUT);
-}
-
-uint16_t ranging()
-{
-  uint32_t time = pulseIn(pin_sonar, HIGH, 200*1000);
-  return (time > 300) ? time : 0;
+  sonarType = detectMBType();
+  Serial.printf("MB_TYPE: %d\n", sonarType);
 }
 
 void loop() {
-  uint16_t distance = ranging();
+  uint16_t distance = ranging(sonarType);
   if (distance < detectRange) {
     if (!changedDetectRange) flash();
   }

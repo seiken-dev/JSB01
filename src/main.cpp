@@ -1,4 +1,8 @@
 #include <Arduino.h>
+#include <cwchar>
+#include "Wire.h"
+#include "SparkFun_VL53L1X.h" //Click here to get the library: http://librarymanager/All#SparkFun_VL53L1X
+
 
 constexpr uint8_t pin_sonar = D5;
 constexpr uint8_t pin_button1 = D0;
@@ -10,17 +14,19 @@ constexpr uint8_t flash_ms = 10;
 uint16_t detectRange=2000;
 bool changedDetectRange = false;
 
+SFEVL53L1X distanceSensor;
+
 void flash(uint16_t ms = flash_ms) {
   digitalWrite(pin_vibe, HIGH);
   delay(ms);
   digitalWrite(pin_vibe, LOW);
 }
 enum MB_Type {
+  None,
   MB10X0,
   MB10X3,
-  None,
 };
-MB_Type sonarType = MB10X0;
+MB_Type sonarType = None;
 
 MB_Type detectMBType() {
   uint f, s;
@@ -29,35 +35,77 @@ MB_Type detectMBType() {
   }
   if(f && pulseInLong(pin_sonar, HIGH)) {
     s = millis();
+  } else {
+    return None;
   }
   return (s-f < 70) ? MB10X0 : MB10X3;
 }
-  
-uint16_t ranging(MB_Type type)
+
+bool detectVL() {
+  Serial.println("VL53L1X Qwiic Test");
+
+  if (distanceSensor.begin() != 0) //Begin returns 0 on a good init
+  {
+    Serial.println("Sensor failed to begin. Please check wiring. Freezing...");
+    return false;
+  }
+  return true;
+}
+
+uint16_t mbRanging(MB_Type type)
 {
+  if (type == None) {
+    return 0;
+  }
   uint32_t time = pulseIn(pin_sonar, HIGH, 200*1000);
   if (type == MB10X0) {
     time = time / 145 * 25;
   }
-  Serial.printf("%lu\n", time);
   return (time > 300) ? time : 0;
 }
+
+uint vlRanging() {
+  distanceSensor.startRanging(); //Write configuration bytes to initiate measurement
+  while (!distanceSensor.checkForDataReady())
+  {
+    delay(1);
+  }
+  int distance = distanceSensor.getDistance(); //Get the result of the measurement from the sensor
+  distanceSensor.clearInterrupt();
+  distanceSensor.stopRanging();
+  return distance;
+}
+
+uint ranging() {
+  uint distance;
+  if (sonarType == None) {
+    distance = vlRanging();
+  } else {
+    distance = mbRanging(sonarType);
+  }
+  return distance;
+}
+
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
   Serial.println("start");
-  pinMode(pin_sonar, INPUT);
   pinMode(pin_button1, INPUT_PULLUP);
   pinMode(pin_button2, INPUT_PULLUP);
   pinMode(pin_vibe, OUTPUT);
-  sonarType = detectMBType();
-  Serial.printf("MB_TYPE: %d\n", sonarType);
+  Wire.begin();
+  if (detectVL() == false) {
+    Wire.end();
+    pinMode(pin_sonar, INPUT);
+    sonarType = detectMBType();
+    Serial.printf("MB_TYPE: %d\n", sonarType);
+  }
 }
 
 void loop() {
-  uint16_t distance = ranging(sonarType);
-  if (distance < detectRange) {
+  uint16_t distance = ranging();
+  if (distance && distance < detectRange) {
     if (!changedDetectRange) flash();
   }
 }
@@ -79,8 +127,8 @@ void loop1() {
   }
   if(changedDetectRange) {
     for (uint c=0; c < detectRange/500; c++) {
-      flash();
       delay(200);
+      flash();
     }
     changedDetectRange = false;
   }

@@ -1,6 +1,10 @@
 #include <Arduino.h>
 #include "Wire.h"
 #include "SparkFun_VL53L1X.h" //Click here to get the library: http://librarymanager/All#SparkFun_VL53L1X
+#ifdef ARDUINO_SEEED_XIAO_RP2040
+#include <SingleFileDrive.h>
+#include "LittleFS.h"
+#endif
 
 constexpr uint8_t pin_sonar = D5;
 constexpr uint8_t pin_button1 = D0;
@@ -37,11 +41,24 @@ MB_Type detectMBType() {
   } else {
     return None;
   }
-  return (s-f < 70) ? MB10X0 : MB10X3;
+  auto type = (s-f < 70) ? MB10X0 : MB10X3;
+  switch (type) {
+    case MB10X0:
+      Serial.println("MB10X0 detected");
+      break;
+      case MB10X3:
+      Serial.println("MB10X3 detected");
+      break;
+      case None:
+        Serial.println("Sonar sensor not detected");
+        break;
+  }
+  return type;
 }
 
+
 bool detectVL() {
-  Serial.println("VL53L1X Qwiic Test");
+  Serial.println("Detecting VL53L1X");
 
   if (distanceSensor.begin() != 0) //Begin returns 0 on a good init
   {
@@ -108,7 +125,7 @@ void loop1()
 }
 
 #ifdef ARDUINO_XIAO_ESP32C3
-void loop1(void *pvParameters)
+void UserCommandTask(void *pvParameters)
 {
   while (1) {
     loop1();
@@ -130,14 +147,11 @@ void setup() {
     Wire.end();
     pinMode(pin_sonar, INPUT);
     sonarType = detectMBType();
-#ifdef ARDUINO_XIAO_ESP32C3
-    Serial.printf("MB_TYPE: %d\n", sonarType);
-#endif
   }
 #ifdef ARDUINO_XIAO_ESP32C3
-  xTaskCreateUniversal(loop1, "loop1", 2048, nullptr, 0, nullptr, 0);
+  xTaskCreateUniversal(UserCommandTask, "User command loop task", 2048, nullptr, 0, nullptr, 0);
 #endif
-  }
+}
 
 void loop() {
   uint16_t distance = ranging();

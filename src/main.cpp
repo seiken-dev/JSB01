@@ -1,8 +1,6 @@
 #include <Arduino.h>
-#include <cwchar>
 #include "Wire.h"
 #include "SparkFun_VL53L1X.h" //Click here to get the library: http://librarymanager/All#SparkFun_VL53L1X
-
 
 constexpr uint8_t pin_sonar = D5;
 constexpr uint8_t pin_button1 = D0;
@@ -21,6 +19,7 @@ void flash(uint16_t ms = flash_ms) {
   delay(ms);
   digitalWrite(pin_vibe, LOW);
 }
+
 enum MB_Type {
   None,
   MB10X0,
@@ -29,7 +28,7 @@ enum MB_Type {
 MB_Type sonarType = None;
 
 MB_Type detectMBType() {
-  uint f, s;
+  unsigned int f, s;
   if (pulseInLong(pin_sonar, HIGH)) {
     f = millis();
   }
@@ -64,7 +63,7 @@ uint16_t mbRanging(MB_Type type)
   return (time > 300) ? time : 0;
 }
 
-uint vlRanging() {
+unsigned int vlRanging() {
   distanceSensor.startRanging(); //Write configuration bytes to initiate measurement
   while (!distanceSensor.checkForDataReady())
   {
@@ -76,8 +75,8 @@ uint vlRanging() {
   return distance;
 }
 
-uint ranging() {
-  uint distance;
+unsigned int ranging() {
+  unsigned int distance;
   if (sonarType == None) {
     distance = vlRanging();
   } else {
@@ -86,37 +85,11 @@ uint ranging() {
   return distance;
 }
 
-
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
-  Serial.println("start");
-  pinMode(pin_button1, INPUT_PULLUP);
-  pinMode(pin_button2, INPUT_PULLUP);
-  pinMode(pin_vibe, OUTPUT);
-  Wire.begin();
-  if (detectVL() == false) {
-    Wire.end();
-    pinMode(pin_sonar, INPUT);
-    sonarType = detectMBType();
-    Serial.printf("MB_TYPE: %d\n", sonarType);
-  }
-}
-
-void loop() {
-  uint16_t distance = ranging();
-  if (distance && distance < detectRange) {
-    if (!changedDetectRange) flash();
-  }
-}
-
-void setup1() { return; }
-
 bool isPressed(uint8_t button) {
-  return (digitalReadFast(button)) ? false : true;
+  return (digitalRead(button)) ? false : true;
 }
-
-void loop1() {
+void loop1()
+{
   if (isPressed(pin_button1)) {
     if (detectRange < 4500) detectRange += 500;
     changedDetectRange = true;
@@ -133,3 +106,47 @@ void loop1() {
     changedDetectRange = false;
   }
 }
+
+#ifdef ARDUINO_XIAO_ESP32C3
+void loop1(void *pvParameters)
+{
+  while (1) {
+    loop1();
+    delay(1);
+  }
+}
+
+#endif
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("start");
+  pinMode(pin_button1, INPUT_PULLUP);
+  pinMode(pin_button2, INPUT_PULLUP);
+  pinMode(pin_vibe, OUTPUT);
+  Wire.begin();
+  if (detectVL() == false) {
+    Wire.end();
+    pinMode(pin_sonar, INPUT);
+    sonarType = detectMBType();
+#ifdef ARDUINO_XIAO_ESP32C3
+    Serial.printf("MB_TYPE: %d\n", sonarType);
+#endif
+  }
+#ifdef ARDUINO_XIAO_ESP32C3
+  xTaskCreateUniversal(loop1, "loop1", 2048, nullptr, 0, nullptr, 0);
+#endif
+  }
+
+void loop() {
+  uint16_t distance = ranging();
+  if (distance && distance < detectRange) {
+    if (!changedDetectRange) flash();
+  }
+}
+
+#ifdef ARDUINO_SEEED_XIAO_RP2040
+void setup1() { return; }
+#endif
+

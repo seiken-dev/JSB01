@@ -2,7 +2,7 @@
 #include "mydefs.h"
 
 #ifdef TOF_SENSOR
-bool TOF_init();
+int8_t TOF_init();
 int16_t TOF_distance();
 void TOF_setFOV(bool isWide = true);
 
@@ -44,6 +44,7 @@ void TOF_setFOV(bool isWide = true);
 
 #define FLASH_MS 20
 #define FLASH_RATIO 4
+#define MIN_PERIOD 75
 
 void flash(uint16_t ms = FLASH_MS) {
 #ifdef PIN_LED
@@ -86,12 +87,12 @@ bool buttonLongPressed(uint8_t pin, unsigned long& btnTick) {
 #endif // TOF_SENSOR
 
 enum Sonar {
-	NONE, MB10x0, MB10x3, TOF
+	NONE, MB10x0, MB10x3, TOF, TOF8x8
 };
 Sonar sonar = Sonar::NONE;
 
 #ifdef DEBUG_SERIAL
-static const char* sonarNames[] = { "NONE", "MB10x0", "MB10x3", "VL53L1X" };
+static const char* sonarNames[] = { "NONE", "MB10x0", "MB10x3", "VL53L1X", "VL53L5CX" };
 #endif
 
 void setup() {
@@ -117,7 +118,7 @@ void setup() {
 	pinMode(PIN_BUTTON1, INPUT_PULLUP);
 	pinMode(PIN_BUTTON2, INPUT_PULLUP);
 	pinMode(PIN_VIB, OUTPUT);
-	delay(400); // wait USB Serial
+	delay(1000); // wait USB Serial
 
 	Serial_print("detect sonar...");
 
@@ -132,8 +133,11 @@ void setup() {
 		}
 	} else {
 #ifdef TOF_SENSOR
-		if (TOF_init()) {
+		uint8_t r = TOF_init();
+		if (r > 0) {
 			sonar = Sonar::TOF;
+		} else if (r < 0) {
+			sonar = Sonar::TOF8x8;
 		}
 #endif
 	}
@@ -157,11 +161,12 @@ void setup() {
     delay(500);
 }
 
-#define MIN_DELAY 50
+#define MIN_DELAY 20
 
 void loop() {
 	static unsigned long startTick = 0;
-	static uint32_t elapse = 0;
+	static int32_t prevDistance = 0;
+	static uint32_t period = 0;
 	static uint16_t maxRange = RANGE_DEFAULT;
 	static bool btn1 = false;
 	static bool btn2 = false;
@@ -169,11 +174,11 @@ void loop() {
 	static unsigned long btn1Tick = 0;
 	static unsigned long btn2Tick = 0;
 #endif
-	unsigned long t = millis();
+	unsigned long tick = millis();
 
-	if (elapse != 0 && t - startTick >= elapse) {
+	if (period != 0 && tick - startTick >= period) {
 		flash();
-		startTick = t;
+		startTick = tick;
 	}
 
 #ifdef TOF_SENSOR
@@ -183,13 +188,13 @@ void loop() {
 			Serial_println("ROI 16x16");
 			flash(30);
 			delay(100);
-			flash(100);
+			flash(80);
 			delay(500);
 		}
 		if (buttonLongPressed(PIN_BUTTON2, btn2Tick)) {
 			TOF_setFOV(false);
 			Serial_println("ROI 4x4");
-			flash(30);
+			flash(80);
 			delay(100);
 			flash(30);
 			delay(500);
@@ -232,17 +237,26 @@ void loop() {
 		distance = distance * 24 / 139; // ≒ / 147.f * 25.4f
 	}
 
-	uint32_t d = (uint32_t)(millis() - t);
+	uint32_t elapse = (uint32_t)(millis() - tick);
 
 	if (distance <= 0 || distance >= maxRange * 1000) {
-		elapse = 0;
-		Serial_println(distance);
+		period = 0;
 	} else {
-		elapse = distance / FLASH_RATIO;
-		Serial_printf("%d T=%dms (%d)\n", distance, elapse, d);
+		period = distance / FLASH_RATIO;
+		if (period < MIN_PERIOD) {
+			period = MIN_PERIOD;
+		}
 	}
+	if (distance != prevDistance) {
+		if (period != 0) {
+			Serial_printf("%d T=%dms (%d)\n", distance, period, elapse);
+		} else {
+			Serial_printf("%d (%d)\n", distance, elapse);
+		}
+	}
+	prevDistance = distance;
 
-	if (d < MIN_DELAY) {
-		delay(MIN_DELAY - d);
+	if (elapse < MIN_DELAY) {
+		delay(MIN_DELAY - elapse);
 	}
 }

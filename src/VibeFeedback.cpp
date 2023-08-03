@@ -77,15 +77,3 @@ void vibeFeedback(DistanceStatus st) {
   }
 }
 
-void setup()
-{
-  Serial.begin(115200);
-  delay(1000);
-  pinMode(pin_vibe, OUTPUT);
-  pinMode(pin_button1, INPUT_PULLUP);
-  pinMode(pin_button2, INPUT_PULLUP);
-}
-
-void loop() {
-  vibeFeedback(s_120);
-}

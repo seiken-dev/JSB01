@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "Wire.h"
-#include "VL53L1X.h"
+#include "SparkFun_VL53L5CX_Library.h"
 #ifdef ARDUINO_SEEED_XIAO_RP2040
 #include <SingleFileDrive.h>
 #include "LittleFS.h"

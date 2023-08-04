@@ -1,12 +1,13 @@
 #include <Arduino.h>
 #include "Wire.h"
 #include "SparkFun_VL53L5CX_Library.h"
+#include "VibeFeedback.h"
 #ifdef ARDUINO_SEEED_XIAO_RP2040
 #include <SingleFileDrive.h>
 #include "LittleFS.h"
 #endif
 
-VL53L1X Tof;
+SparkFun_VL53L5CX ToF;
 constexpr uint8_t pin_sonar = D5;
 constexpr uint8_t pin_button1 = D0;
 constexpr uint8_t pin_button2 = D1;
@@ -61,14 +62,11 @@ MB_Type detectMBType() {
 
 bool detectVL() {
   Serial.println("Detecting VL53L1X");
-  if (!Tof.init())
+  if (!ToF.begin())
   {
     Serial.println("Sensor failed to begin. Please check wiring. Freezing...");
     return false;
   }
-  Tof.setDistanceMode(VL53L1X::Long);
-  Tof.setMeasurementTimingBudget(50000);
-  Tof.startContinuous(50);
   return true;
 }
 
@@ -85,18 +83,7 @@ uint16_t mbRanging(MB_Type type)
 }
 
 unsigned int vlRanging() {
-  Tof.read();
-  uint16_t distance = Tof.ranging_data.range_mm;
-  auto status = Tof.ranging_data.range_status;
-  float ambient = Tof.ranging_data.ambient_count_rate_MCPS;
-  float peak = Tof.ranging_data.peak_signal_count_rate_MCPS;
-  if (isLogging) {
-    logFile.printf("%lu,%u,%d,%f,%f\n", millis(), distance, status, ambient, peak);
-  }
-  if (status == 0) {
-    distance = Tof.ranging_data.range_mm;
-  }
-  return distance;
+  return 0;
 }
 
 unsigned int ranging() {
@@ -113,32 +100,6 @@ bool isPressed(uint8_t button) {
   return (digitalRead(button)) ? false : true;
 }
 
-void loop1()
-{
-  if (isPressed(pin_button1)) {
-    if (detectRange < 4500) detectRange += 500;
-    changedDetectRange = true;
-  }
-  else if (isPressed(pin_button2)) {
-    if (detectRange > 0) {
-      detectRange -= 500;
-      if (detectRange == 0)  {
-        isLogging=false;
-        logFile.close();
-        Serial.println("Closing logfile.");
-      }
-    }
-    
-    changedDetectRange = true;
-  }
-  if(changedDetectRange) {
-    for (uint c=0; c < detectRange/500; c++) {
-      delay(200);
-      flash();
-    }
-    changedDetectRange = false;
-  }
-}
 
 #ifdef ARDUINO_XIAO_ESP32C3
 void UserCommandTask(void *pvParameters)
@@ -209,13 +170,22 @@ void setup() {
 }
 
 void loop() {
-  uint16_t distance = ranging();
-  if (distance && distance < detectRange) {
-    if (!changedDetectRange) flash();
-  }
+  vibe.feedback(VibeFeedback::s_400);
+  delay(3000);
+  vibe.feedback(VibeFeedback::s__nodata);
+  delay(3000);
+  vibe.feedback(VibeFeedback::s_300);
+  delay(3000);
+  vibe.feedback(VibeFeedback::s_200);
+  delay(3000);
+  vibe.feedback(VibeFeedback::s_150);
+  delay(3000);
+  vibe.feedback(VibeFeedback::s_120);
+  delay(3000);
+  vibe.feedback(VibeFeedback::s_100);
+  delay(3000);
+  vibe.feedback(VibeFeedback::s_70);
+  delay(3000);
+  vibe.feedback(VibeFeedback::s_40);
+  delay(3000);
 }
-
-#ifdef ARDUINO_SEEED_XIAO_RP2040
-void setup1() { return; }
-#endif
-

@@ -1,42 +1,28 @@
-#include "Arduino.h"
-#include <vector>
+#include "VibeFeedback.h"
 
-// Pin definitions
-constexpr uint8_t pin_button1 = D0;
-constexpr uint8_t pin_button2 = D1;
-constexpr uint8_t pin_vibe = D2;
-
-enum DistanceStatus : uint8_t {
-  s_err = 0,
-  s_400,
-  s_300,
-  s_200,
-  s_150,
-  s_120,
-  s_100,
-  s_70,
-  s_40,
-  s__nodata
-};
-
+VibeFeedback vibe;
 // 振動パターンのリスト。On時間とOff時間を交互の並べて書く。おそらく0でないほうが望ましい。エラーチェックは適当なので、書く側で考えてね。
-const std::vector<uint16_t> _v_err = {7, 30};
-const std::vector<uint16_t> _v_400 = {15, 300,15, 500};
-const std::vector<uint16_t> _v_300 = {15, 200, 15, 500};
-const std::vector<uint16_t> _v_200 = {15, 100, 15, 500};
-const std::vector<uint16_t> _v_150 = {15, 70, 15, 500};
-const std::vector<uint16_t> _v_120 = {15, 50, 15, 50, 15, 300};
-const std::vector<uint16_t> _v_100 = {15, 30, 15, 30, 15, 200};
-const std::vector<uint16_t> _v_70 = {15, 15};
-const std::vector<uint16_t> _v_40 = {15, 10};
-const std::vector<uint16_t> _v_none = {10};
+static const std::vector<uint16_t> _v_err = {20, 20};
+static const std::vector<uint16_t> _v_400 = {15, 300,15, 770};
+static const std::vector<uint16_t> _v_300 = {15, 200, 15, 500};
+static const std::vector<uint16_t> _v_200 = {15, 100, 15, 500};
+static const std::vector<uint16_t> _v_150 = {15, 70, 15, 500};
+static const std::vector<uint16_t> _v_120 = {15, 50, 15, 50, 15, 300};
+static const std::vector<uint16_t> _v_100 = {15, 30, 15, 30, 15, 200};
+static const std::vector<uint16_t> _v_70 = {15, 40};
+static const std::vector<uint16_t> _v_40 = {15, 20};
+static const std::vector<uint16_t> _v_none = {0, 10};
 
-DistanceStatus distance=s__nodata;
+bool VibeFeedback::feedback(DistanceStatus s)
+{
+  _next = s;
+  return true;
+}
 
-void vibeFeedback(DistanceStatus st) {
+bool VibeFeedback::viberation() {
   bool vibeOn = true; // 振動or おやすみ
   std::vector<uint16_t> _pattern;
-  switch (st) {
+  switch (_next) {
     case s_err:
       _pattern = _v_err;
       break;
@@ -68,12 +54,34 @@ void vibeFeedback(DistanceStatus st) {
       _pattern = _v_none;
       break;
   }
-
+  _current = _next;
   for(auto i : _pattern) {
-    if (vibeOn) digitalWrite(pin_vibe, HIGH);
-    delay(i);
-    if (vibeOn) digitalWrite(pin_vibe, LOW);
+    if (vibeOn) digitalWrite(_pin, HIGH);
+    for(uint _delay=0; _delay < i; _delay+=5) {
+      if (_current != _next) {
+        // 次のフィードバックがセットされたの終了
+        return false;
+      }
+      delay(5);
+    }
+    if (vibeOn) digitalWrite(_pin, LOW);
     vibeOn = !vibeOn;
   }
+  return true;
 }
 
+bool VibeFeedback::stop() {
+  _next = s__nodata;
+  return true;
+}
+
+// RP2040 multitasking
+
+void setup1() {
+  // いつ動くのかなあ
+  return;
+}
+
+void loop1() {
+  vibe.viberation();
+}

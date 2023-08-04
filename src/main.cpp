@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "SparkFun_VL53L5CX_Library_Constants.h"
 #include "Wire.h"
 #include "SparkFun_VL53L5CX_Library.h"
 #include "VibeFeedback.h"
@@ -20,13 +21,6 @@ bool changedDetectRange = false;
 
 File logFile;
 bool isLogging = false;
-
-
-void flash(uint16_t ms = flash_ms) {
-  digitalWrite(pin_vibe, HIGH);
-  delay(ms);
-  digitalWrite(pin_vibe, LOW);
-}
 
 enum MB_Type {
   None,
@@ -96,17 +90,11 @@ unsigned int ranging() {
   return distance;
 }
 
-bool isPressed(uint8_t button) {
-  return (digitalRead(button)) ? false : true;
-}
-
-
 #ifdef ARDUINO_XIAO_ESP32C3
 void UserCommandTask(void *pvParameters)
 {
   while (1) {
     loop1();
-    delay(1);
   }
 }
 
@@ -153,7 +141,7 @@ void setup() {
   singleFileDrive.begin(logFileName.c_str(), logFileName.c_str());
 #endif
   Serial.begin(115200);
-  delay(3000);
+  delay(1000);
   Serial.println("start");
   pinMode(pin_button1, INPUT_PULLUP);
   pinMode(pin_button2, INPUT_PULLUP);
@@ -170,22 +158,15 @@ void setup() {
 }
 
 void loop() {
-  vibe.feedback(VibeFeedback::s_400);
-  delay(3000);
-  vibe.feedback(VibeFeedback::s__nodata);
-  delay(3000);
-  vibe.feedback(VibeFeedback::s_300);
-  delay(3000);
-  vibe.feedback(VibeFeedback::s_200);
-  delay(3000);
-  vibe.feedback(VibeFeedback::s_150);
-  delay(3000);
-  vibe.feedback(VibeFeedback::s_120);
-  delay(3000);
-  vibe.feedback(VibeFeedback::s_100);
-  delay(3000);
-  vibe.feedback(VibeFeedback::s_70);
-  delay(3000);
-  vibe.feedback(VibeFeedback::s_40);
-  delay(3000);
+  uint16_t distance = ranging();
+  // Feedback
+  if (distance < 400) vibe.feedback(VibeFeedback::s_40);
+  else if (distance < 700) vibe.feedback(VibeFeedback::s_70);
+  else if (distance < 1000) vibe.feedback(VibeFeedback::s_100);
+  else if (distance < 1200) vibe.feedback(VibeFeedback::s_120);
+  else if (distance < 1500) vibe.feedback(VibeFeedback::s_150);
+  else if (distance < 2000) vibe.feedback(VibeFeedback::s_200);
+  else if (distance < 3000) vibe.feedback(VibeFeedback::s_300);
+  else if (distance < 4000) vibe.feedback(VibeFeedback::s_400);
+  else if (distance == 0) vibe.feedback(VibeFeedback::s__nodata);
 }

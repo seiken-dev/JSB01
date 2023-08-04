@@ -11,7 +11,7 @@ static const std::vector<uint16_t> _v_120 = {15, 50, 15, 50, 15, 300};
 static const std::vector<uint16_t> _v_100 = {15, 30, 15, 30, 15, 200};
 static const std::vector<uint16_t> _v_70 = {15, 40};
 static const std::vector<uint16_t> _v_40 = {15, 20};
-static const std::vector<uint16_t> _v_none = {0, 10};
+static const std::vector<uint16_t> _v_none = {0, 100};
 
 bool VibeFeedback::feedback(DistanceStatus s)
 {
@@ -55,8 +55,10 @@ bool VibeFeedback::viberation() {
       break;
   }
   _current = _next;
+
   for(auto i : _pattern) {
-    if (vibeOn) digitalWrite(_pin, HIGH);
+    // 振動時間が0のときにHIGHが書き込まれるのを防ぐ
+    if (i > 0 && vibeOn) digitalWrite(_pin, HIGH);
     for(uint _delay=0; _delay < i; _delay+=5) {
       if (_current != _next) {
         // 次のフィードバックがセットされたの終了
@@ -64,7 +66,7 @@ bool VibeFeedback::viberation() {
       }
       delay(5);
     }
-    if (vibeOn) digitalWrite(_pin, LOW);
+    if (i > 0 && vibeOn) digitalWrite(_pin, LOW);
     vibeOn = !vibeOn;
   }
   return true;

@@ -74,13 +74,12 @@ bool VibeFeedback::viberation()
   for(auto i : _pattern) {
     // 振動時間が0のときにHIGHが書き込まれるのを防ぐ
     if (i > 0 && vibeOn) digitalWrite(_pin, HIGH);
-    for(uint _delay=0; _delay < i; _delay+=5) {
-      if (!_isBlocking &&_current != _next) {
-        // 次のフィードバックがセットされたの終了
-        return false;
-      }
-      delay(5);
+    if (!_isBlocking &&_current != _next) {
+      // 次のフィードバックがセットされたので振動してたら止めて終了
+      digitalWrite(_pin, LOW);
+      return false;
     }
+    delay(i);
     if (i > 0 && vibeOn) digitalWrite(_pin, LOW);
     vibeOn = !vibeOn;
   }

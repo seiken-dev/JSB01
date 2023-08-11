@@ -16,15 +16,18 @@ class VibeFeedback {
     s_40,
     s__nodata
   };
+  DistanceStatus operator++();
+  DistanceStatus operator--();
   bool begin();
   bool begin(uint8_t vibePin);
-  bool feedback(DistanceStatus s);
+  bool feedback(DistanceStatus s, bool isBlocking=false);
   bool stop();
   DistanceStatus getCurrent() { return _current; };
   bool viberation();
  private:
   volatile DistanceStatus _current = s__nodata;
-  volatile DistanceStatus _next;
+  volatile DistanceStatus _next=s__nodata;
   uint8_t _pin = D2;
+  volatile bool _isBlocking=false;
 };
 extern VibeFeedback vibe;

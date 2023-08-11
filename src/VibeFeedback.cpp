@@ -1,25 +1,37 @@
 #include "VibeFeedback.h"
+#include "RP2040.h"
+#include "vl53l5cx_api.h"
+#include <iterator>
+#include <new>
 
 VibeFeedback vibe;
 // 振動パターンのリスト。On時間とOff時間を交互の並べて書く。おそらく0でないほうが望ましい。エラーチェックは適当なので、書く側で考えてね。
 static const std::vector<uint16_t> _v_err = {20, 20};
-static const std::vector<uint16_t> _v_400 = {15, 300,15, 770};
-static const std::vector<uint16_t> _v_300 = {15, 200, 15, 500};
-static const std::vector<uint16_t> _v_200 = {15, 100, 15, 500};
+static const std::vector<uint16_t> _v_400 = {15, 270, 15, 700};
+static const std::vector<uint16_t> _v_300 = {15, 270, 15, 500};
+static const std::vector<uint16_t> _v_200 = {15, 170, 15, 500};
 static const std::vector<uint16_t> _v_150 = {15, 70, 15, 500};
-static const std::vector<uint16_t> _v_120 = {15, 50, 15, 50, 15, 300};
-static const std::vector<uint16_t> _v_100 = {15, 30, 15, 30, 15, 200};
-static const std::vector<uint16_t> _v_70 = {15, 40};
-static const std::vector<uint16_t> _v_40 = {15, 20};
-static const std::vector<uint16_t> _v_none = {0, 100};
+static const std::vector<uint16_t> _v_120 = {15, 70, 15, 70, 15, 300};
+static const std::vector<uint16_t> _v_100 = {15, 50, 15, 50, 15, 300};
+static const std::vector<uint16_t> _v_70 = {15, 85};
+static const std::vector<uint16_t> _v_40 = {15, 55};
+static const std::vector<uint16_t> _v_none = {0, 1000};
 
-bool VibeFeedback::feedback(DistanceStatus s)
+bool VibeFeedback::feedback(DistanceStatus s, bool isBlocking)
 {
+  if (_isBlocking == true) return false;
   _next = s;
+  _isBlocking = isBlocking;
   return true;
 }
 
-bool VibeFeedback::viberation() {
+VibeFeedback::DistanceStatus VibeFeedback::operator++()
+{
+  return VibeFeedback::s__nodata;
+}
+
+bool VibeFeedback::viberation()
+{
   bool vibeOn = true; // 振動or おやすみ
   std::vector<uint16_t> _pattern;
   switch (_next) {
@@ -55,12 +67,15 @@ bool VibeFeedback::viberation() {
       break;
   }
   _current = _next;
-
+  if (_isBlocking == true) {
+    // ユーザコマンド、フィードバックを一瞬停止
+    delay(100);
+  }
   for(auto i : _pattern) {
     // 振動時間が0のときにHIGHが書き込まれるのを防ぐ
     if (i > 0 && vibeOn) digitalWrite(_pin, HIGH);
     for(uint _delay=0; _delay < i; _delay+=5) {
-      if (_current != _next) {
+      if (!_isBlocking &&_current != _next) {
         // 次のフィードバックがセットされたの終了
         return false;
       }
@@ -69,6 +84,13 @@ bool VibeFeedback::viberation() {
     if (i > 0 && vibeOn) digitalWrite(_pin, LOW);
     vibeOn = !vibeOn;
   }
+  if (_isBlocking && _current == _next) {
+    // ユーザコマンドの終了
+    _isBlocking=false;
+    delay(100);
+    _next = s__nodata;
+  }
+  
   return true;
 }
 

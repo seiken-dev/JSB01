@@ -15,7 +15,7 @@ static const std::vector<uint16_t> _v_120 = {15, 70, 15, 70, 15, 300};
 static const std::vector<uint16_t> _v_100 = {15, 50, 15, 50, 15, 300};
 static const std::vector<uint16_t> _v_70 = {15, 85};
 static const std::vector<uint16_t> _v_40 = {15, 55};
-static const std::vector<uint16_t> _v_none = {0, 1000};
+static const std::vector<uint16_t> _v_none = {0, 10};
 
 bool VibeFeedback::feedback(DistanceStatus s, bool isBlocking)
 {

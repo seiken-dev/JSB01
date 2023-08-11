@@ -1,16 +1,17 @@
 #include <Arduino.h>
+#include <cstdint>
 #include "Wire.h"
-#include "SparkFun_VL53L5CX_Library.h"
+#include "TOFSensor.h"
 #include "VibeFeedback.h"
 #include "UserInput.h"
 #include "hardware.h"
+#include "mydef.h"
 
 #ifdef ARDUINO_SEEED_XIAO_RP2040
 #include <SingleFileDrive.h>
 #include "LittleFS.h"
 #endif
 
-SparkFun_VL53L5CX ToF;
 
 uint detectRangeList[] = {400, 700, 1000, 1200, 1500, 2000, 3000, 4000};
 uint detectRangeNum = 4;
@@ -49,13 +50,10 @@ SensorType detectMBType() {
 }
 
 SensorType detectVL() {
-  Serial.println("Detecting VL53L1X");
-  if (!ToF.begin())
-  {
-    Serial.println("Sensor failed to begin. Please check wiring. Freezing...");
-    return SensorType::None;
-  }
-  return SensorType::VL53L1X;
+  int8_t r = TOF_init();
+  if (r == -1) return SensorType::VL53L5CX;
+  else if (r == 1) return SensorType::VL53L1X;
+  else return SensorType::None;
 }
 
 uint16_t mbRanging(SensorType type)
@@ -71,13 +69,13 @@ uint16_t mbRanging(SensorType type)
 }
 
 unsigned int vlRanging() {
-  return 0;
+  return TOF_distance();
 }
 
 unsigned int ranging() {
   unsigned int distance=0;
-  if (sensor == SensorType::VL53L1X) {
-    distance = vlRanging();
+  if (sensor == SensorType::VL53L1X || sensor == SensorType::VL53L5CX) {
+    distance = TOF_distance();
   } else {
     distance = mbRanging(sensor);
   }
@@ -162,17 +160,14 @@ void setup() {
   pinMode(pin_button1, INPUT_PULLUP);
   pinMode(pin_button2, INPUT_PULLUP);
   pinMode(pin_vibe, OUTPUT);
-  Wire.begin();
-  if (detectVL() != SensorType::None) {
-    sensor = SensorType::VL53L1X;
-  }
-  else {
+  sensor = detectVL();
+  if (sensor == SensorType::None) {
     Wire.end();
     pinMode(pin_sonar, INPUT);
     sensor = detectMBType();
   }
-
-    cbButton1Click = onClick1;
+  Serial.printf("Sensor type: %d\n", sensor);
+  cbButton1Click = onClick1;
   cbButton1Long = onPress1;
   cbButton2Click = onClick2;
   cbButton2Long = onPress2;

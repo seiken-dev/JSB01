@@ -69,13 +69,16 @@ uint16_t mbRanging(SensorType type)
 }
 
 unsigned int vlRanging() {
-  return TOF_distance();
+  int16_t r = TOF_distance();
+  if (r < 0) return 0;
+  else return r;
 }
 
 unsigned int ranging() {
-  unsigned int distance=0;
+  int distance=0;
   if (sensor == SensorType::VL53L1X || sensor == SensorType::VL53L5CX) {
     distance = TOF_distance();
+    if (distance < 0) distance = 0;
   } else {
     distance = mbRanging(sensor);
   }

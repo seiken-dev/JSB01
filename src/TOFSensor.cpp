@@ -133,7 +133,7 @@ int16_t TOF_distance() {
 				return minDistance;
 			}
 		}
-		return -1;
+		return 0;
 	}
 #endif // TOF_8x8
 

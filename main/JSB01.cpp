@@ -10,8 +10,8 @@ constexpr char log_tag[] = "main";
 extern "C" {
 void app_main(void)
 {
-  xiao_c3.init();
   ESP_LOGI(log_tag, "Booting...");
+  xiao_c3.init();
   while(1)  {
     vTaskDelay(1000);
   }

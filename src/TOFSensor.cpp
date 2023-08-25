@@ -108,6 +108,7 @@ int8_t TOF_init() {
 int16_t TOF_distance() {
 #ifdef TOF_8x8
 	if (isTOF8x8) {
+    Serial.println("L5CX");
 		if (tof8x8.isDataReady()) {
 			if (tof8x8.getRangingData(&resultsData)) { //Read distance data into array
 

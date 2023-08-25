@@ -104,7 +104,3 @@ void setup1() {
   // いつ動くのかなあ
   return;
 }
-
-void loop1() {
-  vibe.viberation();
-}

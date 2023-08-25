@@ -13,8 +13,8 @@
 #endif
 
 
-uint detectRangeList[] = {400, 700, 1000, 1200, 1500, 2000, 3000, 4000};
-uint detectRangeNum = 4;
+uint16_t detectRangeList[] = {400, 700, 1000, 1200, 1500, 2000, 3000, 4000};
+uint16_t detectRangeNum = 4;
 // ユーザ操作定義
 enum class UserCmd : uint8_t {
   none=0,
@@ -83,6 +83,10 @@ unsigned int ranging() {
     distance = mbRanging(sensor);
   }
   return distance;
+}
+
+void loop1() {
+  vibe.viberation();
 }
 
 #ifdef ARDUINO_XIAO_ESP32C3
@@ -186,7 +190,8 @@ void loop()
   uint16_t distance = ranging();
   // Serial.println(distance);
 
-  if (distance < detectRangeList[detectRangeNum]) {
+  if (distance == 0) vibe.feedback(VibeFeedback::s__nodata);
+  else if (distance < detectRangeList[detectRangeNum]) {
     // Feedback
     if (distance < 400) vibe.feedback(VibeFeedback::s_40);
     else if (distance < 700) vibe.feedback(VibeFeedback::s_70);
@@ -196,7 +201,7 @@ void loop()
     else if (distance < 2000) vibe.feedback(VibeFeedback::s_200);
     else if (distance < 3000) vibe.feedback(VibeFeedback::s_300);
     else if (distance < 4000) vibe.feedback(VibeFeedback::s_400);
-    else if (distance == 0) vibe.feedback(VibeFeedback::s__nodata);
   }
   else vibe.feedback(VibeFeedback::s__nodata);
+  delay(20);
 }

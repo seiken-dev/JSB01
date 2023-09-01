@@ -12,6 +12,7 @@
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "board.h"
+#include "soc/gpio_num.h"
 constexpr char tag[] = "Mainboard";
 
 esp_err_t MainBoard::gpioInit() {
@@ -28,28 +29,28 @@ esp_err_t MainBoard::gpioInit() {
 esp_err_t MainBoard::beepInit()
 {
   ledc_timer.speed_mode = LEDC_LOW_SPEED_MODE;
-  ledc_timer.duty_resolution = LEDC_TIMER_8_BIT;
-  ledc_timer.timer_num = LEDC_TIMER_0;
+  ledc_timer.duty_resolution = LEDC_TIMER_10_BIT;
+  ledc_timer.timer_num = ledc_timer_t(LEDC_TIMER_MAX-1);
   ledc_timer.freq_hz = 2000;
   ledc_timer.clk_cfg = LEDC_AUTO_CLK;
   ledc_channel.gpio_num = buzzer;
   ledc_channel.speed_mode = LEDC_LOW_SPEED_MODE;
-  ledc_channel.channel = LEDC_CHANNEL_0;
-  ledc_channel.timer_sel = LEDC_TIMER_0;
-  ledc_channel.duty = 0;
+  ledc_channel.channel = ledc_channel_t(LEDC_CHANNEL_MAX-1);
+  ledc_channel.timer_sel = ledc_timer_t(LEDC_TIMER_MAX-1);
+  ledc_channel.duty = 0; // (1 << ledc_timer.duty_resolution-1);
   ledc_timer_config(&ledc_timer);
   ledc_channel_config(&ledc_channel);
   ESP_LOGI(tag, "%s", "Beep initialization OK");
-  ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 1);
+  ledc_set_freq(ledc_channel.speed_mode, ledc_timer.timer_num, 2000);
+  ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 1 << (ledc_timer.duty_resolution-1));
   ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
   vTaskDelay(80 / portTICK_PERIOD_MS);
   // Beep off
   ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 0);
   ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
-  ledc_set_freq(ledc_channel.speed_mode, LEDC_TIMER_0, 1000);
-  ledc_bind_channel_timer(ledc_channel.speed_mode, ledc_channel.channel, LEDC_TIMER_0); 
+  ledc_set_freq(ledc_channel.speed_mode, ledc_timer.timer_num, 1000);
   // Beep on
-  ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 1);
+  ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 1 << (ledc_timer.duty_resolution-1));
   ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
   vTaskDelay(80 / portTICK_PERIOD_MS);
   // Beep off
@@ -62,6 +63,11 @@ esp_err_t MainBoard::init() {
   esp_err_t ret = gpioInit();
   if (!ret) beepInit();
   return ret;
+}
+
+bool MainBoard::readSW(gpio_num_t sw)
+{
+  return gpio_get_level(sw) ? false : true;
 }
 
 // Instance

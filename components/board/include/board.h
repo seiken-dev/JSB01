@@ -3,6 +3,7 @@
 #include "esp_err.h"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
+#include "soc/gpio_num.h"
 
 // Pin definitions
 
@@ -17,6 +18,7 @@
 class MainBoard {
  public:
   esp_err_t init();
+  bool readSW(gpio_num_t sw);
   static constexpr gpio_num_t TX = GPIO_NUM_21;
   static constexpr gpio_num_t RX = GPIO_NUM_20;
   static constexpr gpio_num_t SDA = GPIO_NUM_6;
@@ -45,7 +47,7 @@ class MainBoard {
   static constexpr gpio_num_t sw2 = GPIO_NUM_0;
   static constexpr gpio_num_t vibe = GPIO_NUM_2;
  private:
-    ledc_timer_config_t ledc_timer;
+  ledc_timer_config_t ledc_timer;
   ledc_channel_config_t ledc_channel;
   esp_err_t beepInit();
   esp_err_t gpioInit();

@@ -43,9 +43,9 @@ class MainBoard {
   static constexpr gpio_num_t D9 = GPIO_NUM_9;
   static constexpr gpio_num_t D10 = GPIO_NUM_10;
   static constexpr gpio_num_t buzzer = GPIO_NUM_10;
-  static constexpr gpio_num_t sw1 = GPIO_NUM_7;
-  static constexpr gpio_num_t sw2 = GPIO_NUM_0;
-  static constexpr gpio_num_t vibe = GPIO_NUM_2;
+  static constexpr gpio_num_t sw1 = D0;
+  static constexpr gpio_num_t sw2 = D1;
+  static constexpr gpio_num_t vibe = D2;;
  private:
   ledc_timer_config_t ledc_timer;
   ledc_channel_config_t ledc_channel;

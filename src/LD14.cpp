@@ -1,6 +1,9 @@
 #include <Arduino.h>
+#include <cstdint>
 #include "LD14.h"
 #include "esp32-hal-gpio.h"
+#include "esp32-hal-ledc.h"
+#include "esp_attr.h"
 
 constexpr uint8_t pwmCH = 0;
 constexpr uint32_t pwmFreq = 150;
@@ -20,7 +23,7 @@ bool LD14::begin(uint8_t pin, bool init, bool ledc)
   return true;
 }
 
-void LD14::on() {
+void IRAM_ATTR LD14::on() {
   if (_ledc) {
     ledcWrite(pwmCH, 1 << (pwmResolution - 1));
   } else {
@@ -28,10 +31,15 @@ void LD14::on() {
   }
 }
 
-void LD14::off() {
+void IRAM_ATTR LD14::off() {
   if (_ledc) {
     ledcWrite(pwmCH, 0);
   } else {
     digitalWrite(_pin, LOW);
   }
+}
+
+void LD14::setFrequency(uint32_t f)
+{
+  if (_ledc) ledcChangeFrequency(pwmCH, f, pwmResolution);
 }

@@ -1,13 +1,7 @@
 #include <Arduino.h>
-#include <cstdint>
-#include "esp32-hal-gpio.h"
-#include "esp32-hal-timer.h"
-#include "esp_attr.h"
-#include "freertos/FreeRTOS.h"
 #include "hardware.h"
 #include "MB10xx.h"
 #include "LD14.h"
-#include "pins_arduino.h"
 
 MB10xx mb;
 LD14 vibe;
@@ -45,6 +39,12 @@ void IRAM_ATTR vibeFunc(void) {
   }
   return;
 }
+#elif defined ARDUINO_SEEED_XIAO_RP2040
+void loop1()
+{
+  mb.ranging();
+  // delay(1); // いらないかも？
+}
 #endif
 
 void setup() {
@@ -53,10 +53,10 @@ void setup() {
   Serial.println("Booting...");
   ioInit();
   mb.begin(pin_sonar, false);
-  vibe.begin(D10, true, true);
+  vibe.begin(pin_vibe, false, false);
   vibe.setFrequency(1500);
   vibe.on();
-  delay(15);
+  delay(50);
   vibe.off();
 #ifdef ARDUINO_XIAO_ESP32C3
   vibeClock = timerBegin(0, 80, true);
@@ -68,9 +68,9 @@ void setup() {
 }
   
 void loop() {
-  uint32_t s = millis();
-  vibeOn = true;
-  duration = 2;
-  delay(500);
-  Serial.printf("%u ms delayed  \r", millis()-s);
+  vibe.on();
+  delay(5);
+  vibe.off();
+  delay(85);
+  Serial.printf("%u  \r", mb.getPrev());
 }

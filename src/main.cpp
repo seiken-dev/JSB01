@@ -21,25 +21,7 @@ void rangingTask(void *param)
     delay(1);
   }
 }
-
-hw_timer_t *vibeClock;
-volatile bool vibeOn = false;
-volatile uint16_t duration = 0;
-volatile uint16_t passed = 0;
-void IRAM_ATTR vibeFunc(void) {
-  if (vibeOn && passed == 0) {
-    vibe.on();
-    vibeOn = false;
-  }
-  else if (passed >= duration) {
-    vibe.off();
-    passed = 0;
-  } else {
-    passed++;
-  }
-  return;
-}
-#elif defined ARDUINO_SEEED_XIAO_RP2040
+#else
 void loop1()
 {
   mb.ranging();
@@ -56,21 +38,14 @@ void setup() {
   vibe.begin(pin_vibe, false, false);
   vibe.setFrequency(1500);
   vibe.on();
-  delay(50);
+  delay(10);
   vibe.off();
 #ifdef ARDUINO_XIAO_ESP32C3
-  vibeClock = timerBegin(0, 80, true);
-  timerAttachInterrupt(vibeClock, vibeFunc, true);
-  timerAlarmWrite(vibeClock, 5 * 1000, true);
-  timerAlarmEnable(vibeClock);
-  // xTaskCreateUniversal(rangingTask, "RangingTask", 2048, nullptr, 5, nullptr, 0);
+  xTaskCreateUniversal(rangingTask, "RangingTask", 2048, nullptr, 5, nullptr, 0);
 #endif
 }
   
 void loop() {
-  vibe.on();
-  delay(5);
-  vibe.off();
-  delay(85);
-  Serial.printf("%u  \r", mb.getPrev());
+  vibe.on(15);
+  delay(2000);
 }

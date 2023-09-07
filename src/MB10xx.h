@@ -11,7 +11,7 @@ class MB10xx {
   };
   bool begin(uint8_t pin, bool init);
   uint32_t ranging();
-  uint32_t getPrev() { return _currentDistance; }
+  uint32_t getDistance() { return _currentDistance; }
   mbtype_t detectMb();
 private:
   uint8_t _pin;

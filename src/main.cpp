@@ -35,7 +35,7 @@ void setup() {
   Serial.println("Booting...");
   ioInit();
   mb.begin(pin_sonar, false);
-  vibe.begin(pin_vibe, true, true);
+  vibe.begin(pin_vibe, false, false);
   vibe.setFrequency(1500);
   vibe.on();
   delay(10);
@@ -46,6 +46,19 @@ void setup() {
 }
   
 void loop() {
-  vibe.on(15);
-  delay(2000);
+  static uint16_t previousUnit = 0;
+  static unsigned int expire = 0;
+  uint16_t unit = mb.getDistance() / 400;
+  uint16_t period = unit * 100; // バイブ間隔
+  Serial.printf("%-5d    \r", period);
+  if (unit == 0) return;
+  if (previousUnit != unit) {
+    expire = millis()+period;
+    vibe.on(15);
+  }
+  if (millis() > expire) {
+    vibe.on(15);
+    expire = millis()+period;
+  }
+  previousUnit = unit;
 }

@@ -35,7 +35,7 @@ void setup() {
   Serial.println("Booting...");
   ioInit();
   mb.begin(pin_sonar, false);
-  vibe.begin(pin_vibe, false, false);
+  vibe.begin(pin_vibe, true, true);
   vibe.setFrequency(1500);
   vibe.on();
   delay(10);

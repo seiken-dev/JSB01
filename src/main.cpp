@@ -1,10 +1,10 @@
 #include <Arduino.h>
 #include "hardware.h"
 #include "MB10xx.h"
-#include "LD14.h"
+#include "Vibrator.h"
 
 MB10xx mb;
-LD14 vibe;
+Vibrator vib;
 
 void ioInit() {
   pinMode(pin_sonar, INPUT);
@@ -30,16 +30,16 @@ void loop1()
 #endif
 
 void setup() {
-  Serial.begin();
+  Serial.begin(115200);
   delay(2000);
   Serial.println("Booting...");
   ioInit();
   mb.begin(pin_sonar, false);
-  vibe.begin(pin_vibe, false, false);
-  vibe.setFrequency(1500);
-  vibe.on();
+  vib.begin(pin_vibe, false, false);
+  vib.setFrequency(1500);
+  vib.on();
   delay(10);
-  vibe.off();
+  vib.off();
 #ifdef ARDUINO_XIAO_ESP32C3
   xTaskCreateUniversal(rangingTask, "RangingTask", 2048, nullptr, 5, nullptr, 0);
 #endif
@@ -54,10 +54,10 @@ void loop() {
   if (unit == 0) return;
   if (previousUnit != unit) {
     expire = millis()+period;
-    vibe.on(15);
+    vib.on(15);
   }
   if (millis() > expire) {
-    vibe.on(15);
+    vib.on(15);
     expire = millis()+period;
   }
   previousUnit = unit;

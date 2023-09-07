@@ -1,11 +1,13 @@
 #pragma once
 
 #include "Arduino.h"
+#include <cstdint>
 
-class LD14 {
+class Vibrator {
  public:
   bool begin(uint8_t pin, bool init, bool ledc);
   static void on();
+  static void on(uint32_t f, uint16_t ms);
   static void on(uint16_t ms);
   static void off();
   static void setFrequency(uint32_t f);
@@ -14,6 +16,6 @@ class LD14 {
   static bool _ledc;
   static uint8_t _pwmSlice;
 #ifdef ARDUINO_SEEED_XIAO_RP2040
-  static int64_t vibeOffCB(alarm_id_t id, void *user_data);
+  static int64_t vibOffCB(alarm_id_t id, void *user_data);
 #endif
 };

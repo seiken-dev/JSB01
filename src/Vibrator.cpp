@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <cstdint>
-#include "LD14.h"
+#include "Vibrator.h"
 
 #ifdef ARDUINO_SEEED_XIAO_RP2040
 #include "hardware/pwm.h"
@@ -12,7 +12,7 @@ constexpr uint8_t pwmResolution = 12;
 #ifdef ARDUINO_XIAO_ESP32C3
 hw_timer_t *vibeClock = nullptr;
 #endif
-bool LD14::begin(uint8_t pin, bool init, bool ledc)
+bool Vibrator::begin(uint8_t pin, bool init, bool ledc)
 {
   if (init && !ledc) {
     pinMode(pin, OUTPUT);
@@ -39,7 +39,7 @@ bool LD14::begin(uint8_t pin, bool init, bool ledc)
 }
 
 #ifdef ARDUINO_SEEED_XIAO_RP2040
-void LD14::on() {
+void Vibrator::on() {
   if (_ledc) {
     pwm_set_enabled(_pwmSlice, true);
   } else {
@@ -47,20 +47,20 @@ void LD14::on() {
   }
 }
 
-void LD14::on(uint16_t ms)
+void Vibrator::on(uint16_t ms)
 {
   on();
-  add_alarm_in_ms(ms, vibeOffCB, nullptr, false);
+  add_alarm_in_ms(ms, vibOffCB, nullptr, false);
 }
 
-void LD14::off() {
+void Vibrator::off() {
   if (_ledc) {
     pwm_set_enabled(_pwmSlice, false);
   } else {
     digitalWrite(_pin, LOW);
   }
 }
-void LD14::setFrequency(uint32_t f)
+void Vibrator::setFrequency(uint32_t f)
 {
   if (_ledc) {
     pwm_set_enabled(_pwmSlice, false);
@@ -70,7 +70,7 @@ void LD14::setFrequency(uint32_t f)
   }
 }
 #else
-void IRAM_ATTR LD14::on() {
+void IRAM_ATTR Vibrator::on() {
   if (_ledc) {
     ledcWrite(pwmCH, 1 << (pwmResolution - 1));
   } else {
@@ -78,7 +78,7 @@ void IRAM_ATTR LD14::on() {
   }
 }
 
-void IRAM_ATTR LD14::off() {
+void IRAM_ATTR Vibrator::off() {
   if (_ledc) {
     ledcWrite(pwmCH, 0);
   } else {
@@ -86,18 +86,18 @@ void IRAM_ATTR LD14::off() {
   }
 }
 
-void LD14::setFrequency(uint32_t f)
+void Vibrator::setFrequency(uint32_t f)
 {
   if (_ledc) ledcChangeFrequency(pwmCH, f, pwmResolution);
 }
 #endif
 
-int64_t LD14::vibeOffCB(alarm_id_t id, void *user_data)
+int64_t Vibrator::vibOffCB(alarm_id_t id, void *user_data)
 {
   off();
   return 0;
 }
 
-uint8_t LD14::_pin;
-bool LD14::_ledc;
-uint8_t LD14::_pwmSlice;
+uint8_t Vibrator::_pin;
+bool Vibrator::_ledc;
+uint8_t Vibrator::_pwmSlice;

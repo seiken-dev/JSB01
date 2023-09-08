@@ -35,6 +35,7 @@ bool Vibrator::begin(uint8_t pin, bool init, bool ledc)
 #endif
   }
   _ledc = ledc;
+  _on = false;
   return true;
 }
 
@@ -45,6 +46,7 @@ void Vibrator::on() {
   } else {
     digitalWrite(_pin, HIGH);
   }
+  _on = true;
 }
 
 void Vibrator::on(uint16_t ms)
@@ -59,6 +61,7 @@ void Vibrator::off() {
   } else {
     digitalWrite(_pin, LOW);
   }
+  _on = false;
 }
 void Vibrator::setFrequency(uint32_t f)
 {
@@ -101,3 +104,5 @@ int64_t Vibrator::vibOffCB(alarm_id_t id, void *user_data)
 uint8_t Vibrator::_pin;
 bool Vibrator::_ledc;
 uint8_t Vibrator::_pwmSlice;
+bool Vibrator::_on;
+Vibrator vib;

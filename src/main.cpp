@@ -4,7 +4,6 @@
 #include "Vibrator.h"
 
 MB10xx mb;
-Vibrator vib;
 
 void ioInit() {
   pinMode(pin_sonar, INPUT);

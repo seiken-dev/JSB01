@@ -24,13 +24,14 @@ void rangingTask(void *param)
 }
 #else
 void setup1() {
+  mb.begin(pin_sonar, false);
   return;
 }
 
 void loop1()
 {
   mb.ranging();
-  // delay(1); // いらないかも？
+  delay(1); // いらないかも？
 }
 #endif
 
@@ -39,7 +40,6 @@ void setup() {
   delay(2000);
   Serial.println("Booting...");
   ioInit();
-  mb.begin(pin_sonar, false);
   vib.begin(pin_vibe, false, false);
   vib.setFrequency(1500);
   vib.on();
@@ -52,13 +52,11 @@ void setup() {
 }
   
 void loop() {
+  feedback();
   static uint16_t previousUnit = 0;
-  // uint16_t unit = mb.getDistance() / 500;
-  if (unit == 0) return;
+  uint16_t unit = mb.getDistance() / 500;
   if (unit != previousUnit) {
     previousUnit = unit;
+    Serial.printf("%3d:%3d\r", previousUnit, unit);
   }
-  // Serial.printf("%3d:%3d\r", previousUnit, unit);
-  delay(20);
-  feedback();
 }

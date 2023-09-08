@@ -1,7 +1,9 @@
 #include <Arduino.h>
+#include <iomanip>
 #include "hardware.h"
 #include "MB10xx.h"
 #include "Vibrator.h"
+#include "Feedback.h"
 
 MB10xx mb;
 
@@ -21,6 +23,10 @@ void rangingTask(void *param)
   }
 }
 #else
+void setup1() {
+  return;
+}
+
 void loop1()
 {
   mb.ranging();
@@ -39,6 +45,7 @@ void setup() {
   vib.on();
   delay(10);
   vib.off();
+  setPattern(100, 100, 500, 0);
 #ifdef ARDUINO_XIAO_ESP32C3
   xTaskCreateUniversal(rangingTask, "RangingTask", 2048, nullptr, 5, nullptr, 0);
 #endif
@@ -46,18 +53,12 @@ void setup() {
   
 void loop() {
   static uint16_t previousUnit = 0;
-  static unsigned int expire = 0;
-  uint16_t unit = mb.getDistance() / 400;
-  uint16_t period = unit * 100; // バイブ間隔
-  Serial.printf("%-5d    \r", period);
+  // uint16_t unit = mb.getDistance() / 500;
   if (unit == 0) return;
-  if (previousUnit != unit) {
-    expire = millis()+period;
-    vib.on(15);
+  if (unit != previousUnit) {
+    previousUnit = unit;
   }
-  if (millis() > expire) {
-    vib.on(15);
-    expire = millis()+period;
-  }
-  previousUnit = unit;
+  // Serial.printf("%3d:%3d\r", previousUnit, unit);
+  delay(20);
+  feedback();
 }

@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <cstdint>
 #include <iomanip>
 #include "hardware.h"
 #include "MB10xx.h"
@@ -41,22 +42,30 @@ void setup() {
   Serial.println("Booting...");
   ioInit();
   vib.begin(pin_vibe, false, false);
-  vib.setFrequency(1500);
+  vib.setFrequency(150);
   vib.on();
-  delay(10);
+  delay(100);
   vib.off();
-  setPattern(100, 100, 500, 0);
+  setPattern(0, 0, 00, 0); // クリア
 #ifdef ARDUINO_XIAO_ESP32C3
   xTaskCreateUniversal(rangingTask, "RangingTask", 2048, nullptr, 5, nullptr, 0);
 #endif
 }
-  
+uint16_t patterns[][4] = {
+  {0, 0, 0, 0}, {50, 50, 50, 300}, {100, 100, 100, 600}, {50, 50, 300}, {100, 100, 600},
+    {200, 200, 600}, {500, 500, 1000},     {500, 1000},
+};
+
 void loop() {
   feedback();
   static uint16_t previousUnit = 0;
   uint16_t unit = mb.getDistance() / 500;
   if (unit != previousUnit) {
-    previousUnit = unit;
+    if (unit < 8) {
+      previousUnit = unit;
+      setPattern(patterns[unit][0], patterns[unit][1],
+		 patterns[unit][2], patterns[unit][3]);
+    }
     Serial.printf("%3d:%3d\r", previousUnit, unit);
   }
 }

@@ -7,8 +7,8 @@
 #endif
 
 constexpr uint8_t pwmCH = 0;
-constexpr uint32_t pwmFreq = 150;
-constexpr uint8_t pwmResolution = 12;
+constexpr uint32_t pwmFreq = 126;
+constexpr uint8_t pwmResolution = 13;
 #ifdef ARDUINO_XIAO_ESP32C3
 hw_timer_t *vibeClock = nullptr;
 #endif
@@ -23,7 +23,7 @@ bool Vibrator::begin(uint8_t pin, bool init, bool ledc)
     gpio_set_function(_pin, GPIO_FUNC_PWM);
     _pwmSlice = pwm_gpio_to_slice_num(_pin);
     pwm_set_clkdiv(_pwmSlice,
-		   (125000000l / (pwmFreq * (1 << pwmResolution)))
+		   (float(F_CPU) / (pwmFreq * (1 << pwmResolution)))
 		   );
     pwm_set_wrap(_pwmSlice, (1 << pwmResolution)-1);
     pwm_set_chan_level(_pwmSlice, PWM_CHAN_A, 1 << (pwmResolution-1));
@@ -68,7 +68,7 @@ void Vibrator::setFrequency(uint32_t f)
   if (_ledc) {
     pwm_set_enabled(_pwmSlice, false);
     pwm_set_clkdiv(_pwmSlice,
-		   (125000000l / (f * (1 << pwmResolution)))
+		   (float(F_CPU) / (f * (1 << pwmResolution)))
 		   );
   }
 }

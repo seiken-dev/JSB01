@@ -2,7 +2,6 @@
 #include "Vibrator.h"
 #include "Feedback.h"
 
-
 FeedbackPattern p;
 void setPattern(uint16_t first, uint16_t second, uint16_t third, uint16_t fourth)
 {
@@ -13,12 +12,13 @@ void setPattern(uint16_t first, uint16_t second, uint16_t third, uint16_t fourth
 }
 
 void feedback() {
-  static uint8_t i = 0;
-  static uint8_t periodCOunt = 0;
-  static unsigned long expire = 0;
+  static uint8_t i = 0; // インターバルのインデックス
+  static uint8_t periodCOunt = 0; // インターバルの数
+  static unsigned long expire = 0; // インターバル終了時刻
+  // とりあえず振動開始
   if (expire == 0) {
     if (p.period_1) vib.on(20);
-    if (i >= periodCOunt) i = 0;
+    if (i >= periodCOunt) i = 0; // 最後のインターバルまで処理したので初期化
     // インターバルの数をセット
     if (p.period_4) periodCOunt=4;
     else if (p.period_3) periodCOunt=3;
@@ -31,7 +31,6 @@ void feedback() {
     else if (i == 3 && p.period_4) expire = millis()+p.period_4;
   }
   else if (millis() > expire) {
-    vib.off();
     expire = 0;
     if (i < periodCOunt) i++;
   }

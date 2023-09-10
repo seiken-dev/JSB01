@@ -1,8 +1,10 @@
 #include "Arduino.h"
 #include "Vibrator.h"
 #include "Feedback.h"
+#include "esp32-hal-timer.h"
+#include "esp_attr.h"
 
-FeedbackPattern p;
+volatile FeedbackPattern p;
 void setPattern(uint16_t first, uint16_t second, uint16_t third, uint16_t fourth)
 {
   p.period_1 = first;
@@ -12,7 +14,12 @@ void setPattern(uint16_t first, uint16_t second, uint16_t third, uint16_t fourth
   // Serial.printf("%d, %d, %d, %d        \r", p.period_1, p.period_2, p.period_3, p.period_4);
 }
 
-void feedback() {
+#ifdef ARDUINO_XIAO_ESP32C3
+void IRAM_ATTR feedback()
+#else
+void feedback()
+#endif
+{
   static uint8_t i = 0; // インターバルのインデックス
   static uint8_t periodCOunt = 0; // インターバルの数
   static unsigned long expire = 0; // インターバル終了時刻
@@ -37,3 +44,13 @@ void feedback() {
   }
 }
 
+#ifdef ARDUINO_XIAO_ESP32C3
+hw_timer_t * feedbackTick = nullptr;
+
+void feedbackBegin() {
+  feedbackTick = timerBegin(1, 80, true);
+  timerAttachInterrupt(feedbackTick, feedback, true);
+  timerAlarmWrite(feedbackTick, 5000, true);
+  timerAlarmEnable(feedbackTick);
+}
+#endif

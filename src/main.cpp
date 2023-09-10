@@ -54,16 +54,16 @@ void setup() {
 uint16_t patterns[][4] = {
   {0, 0, 0, 0},
   {30, 30, 30, 200},
-  {30, 30, 2000, 0},
   {30, 30, 30, 500},
+  {50, 50, 50, 200},
   {50, 50, 50, 500},
-  {50, 50, 500, 0},
-  {100, 100, 100, 500},
+  {80, 80, 80, 200},
+  {80, 80, 80, 500},
+  {100, 100, 200, 0},
   {100, 100, 500, 0},
-  {200, 200, 500, 0},
 };
 
-void loop() {
+void sonarMode() {
   feedback();
   static uint16_t previousUnit = 0;
   uint16_t unit = mb.getDistance() / 500;
@@ -76,5 +76,9 @@ void loop() {
     }
   }
   // Serial.printf("%3d:%3d\r", previousUnit, unit);
+}
+
+void loop() {
+  sonarMode();
   delay(5);
 }

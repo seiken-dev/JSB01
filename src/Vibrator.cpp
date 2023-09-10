@@ -20,6 +20,7 @@ bool Vibrator::begin(uint8_t pin, bool init, bool ledc)
   if (init && ledc) {
 #ifdef ARDUINO_XIAO_ESP32C3
     vibClock = timerBegin(0, 80, true);
+    
     timerAttachInterrupt(vibClock, off, true);
     ledcSetup(pwmCH, pwmFreq, pwmResolution);
     ledcAttachPin(_pin, pwmCH);

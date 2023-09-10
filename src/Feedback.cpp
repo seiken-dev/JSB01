@@ -9,6 +9,7 @@ void setPattern(uint16_t first, uint16_t second, uint16_t third, uint16_t fourth
   p.period_2 = second;
   p.period_3 = third;
   p.period_4 = fourth;
+  // Serial.printf("%d, %d, %d, %d        \r", p.period_1, p.period_2, p.period_3, p.period_4);
 }
 
 void feedback() {
@@ -17,7 +18,6 @@ void feedback() {
   static unsigned long expire = 0; // インターバル終了時刻
   // とりあえず振動開始
   if (expire == 0) {
-    if (p.period_1) vib.on(20);
     if (i >= periodCOunt) i = 0; // 最後のインターバルまで処理したので初期化
     // インターバルの数をセット
     if (p.period_4) periodCOunt=4;
@@ -29,9 +29,11 @@ void feedback() {
     else if (i == 1 && p.period_2) expire = millis()+p.period_2;
     else if (i == 2 && p.period_3) expire = millis()+p.period_3;
     else if (i == 3 && p.period_4) expire = millis()+p.period_4;
+    if (p.period_1) vib.on(20);
   }
   else if (millis() > expire) {
     expire = 0;
     if (i < periodCOunt) i++;
   }
 }
+

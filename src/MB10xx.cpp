@@ -1,7 +1,6 @@
 #include "Arduino.h"
 #include "MB10xx.h"
 
-#include <iterator>
 bool MB10xx::begin(uint8_t pin, bool init) {
   if (init) {
     pinMode(pin, INPUT);
@@ -26,8 +25,7 @@ MB10xx::mbtype_t MB10xx::detectMb() {
 
 uint32_t MB10xx::ranging() {
   _currentDistance = pulseIn(_pin, HIGH, 500*1000);
-  uint8_t remain = _currentDistance % 147;
-  if (_currentDistance) {
+  if (_currentDistance >= 147*20 && _currentDistance <= 147*200) {
     // インチをミリに変換
     if (_type == MB10xx::mb_10x0) {
       _currentDistance /= 7;
@@ -35,6 +33,11 @@ uint32_t MB10xx::ranging() {
       _currentDistance += (_currentDistance/126);
       _currentDistance /= 10;
     }
+    Serial.printf("%u   \r", _currentDistance);
+  }
+  else {
+    Serial.print("E  \r");
+    _currentDistance = 0;
   }
   return _currentDistance;
 }

@@ -1,33 +1,32 @@
 #ifdef TOF_SENSOR
 
 #include <Wire.h>
+#include "TOFSensor.h"
 
 #ifdef TOF_ADAFRUIT
 #include "Adafruit_VL53L1X.h"
-Adafruit_VL53L1X tof = Adafruit_VL53L1X();
+static Adafruit_VL53L1X tof = Adafruit_VL53L1X();
 #else // Pololu
 #include "VL53L1X.h"
-VL53L1X tof;
+static VL53L1X tof;
 #endif
 
 #ifdef TOF_8x8
 #include <SparkFun_VL53L5CX_Library.h>
 
-#define VL53L5CX_ADDR 0x52
 #define VL53L1X_MODEL_ID_REG 0x010F
 #define VL53L1X_MODEL_ID 0xEACC
 
-SparkFun_VL53L5CX tof8x8;
-VL53L5CX_ResultsData resultsData;
-static uint8_t imageSize = 8;
+static SparkFun_VL53L5CX tof8x8;
+static VL53L5CX_ResultsData resultsData;
 static bool isTOF8x8 = false;
-static int16_t prevDistance = 0;
+static uint8_t imageSize = 8;
 
 #define BUFFER_SIZE 64
 #define PERIOD8x8_MS 15
 #define PERIOD4x4_MS 60
 #define MAX_DELTA 500 // ignore data that is significantly different from its surroundings
-int16_t distanceBuffer[BUFFER_SIZE]; // ignore locked data
+static int16_t distanceBuffer[BUFFER_SIZE]; // ignore locked data
 #endif // TOF_8x8
 
 #define VL53L1X_ADDR 41
@@ -36,11 +35,11 @@ int16_t distanceBuffer[BUFFER_SIZE]; // ignore locked data
 #define BLOCKING_TIMEOUT 500
 
 #ifdef TOF_8x8
-void clearDistanceBuffer() {
+static void clearDistanceBuffer() {
 	memset(distanceBuffer, -1, sizeof(distanceBuffer));
 }
 
-bool checkDelta(int8_t x, int8_t y, int16_t d, int16_t d0) {
+static bool checkDelta(int8_t x, int8_t y, int16_t d, int16_t d0) {
 	if (x >= 0 && x < imageSize && y >= 0 && y < imageSize) {
 		if (d > d0 && d - d0 > MAX_DELTA) {
 			return false;
@@ -51,12 +50,12 @@ bool checkDelta(int8_t x, int8_t y, int16_t d, int16_t d0) {
 	return true;
 }
 
-uint16_t readRegWord(uint8_t addr, uint16_t reg) {
+static uint16_t readRegWord(uint8_t addr, uint16_t reg) {
 	Wire.beginTransmission(addr);
 	Wire.write((uint8_t)(reg >> 8));
 	Wire.write((uint8_t)(reg));
 	uint8_t status = Wire.endTransmission();
-	Wire.requestFrom(addr, 2);
+	Wire.requestFrom(addr, (uint8_t)2);
 	uint16_t value = (uint16_t)Wire.read() << 8;
 	value |= Wire.read();
 	return value;
@@ -64,27 +63,26 @@ uint16_t readRegWord(uint8_t addr, uint16_t reg) {
 
 #endif // TOF_8x8
 
-// return 0:not found, 1:VL53L1X, -1:VL53L5CX
-int8_t TOF_init() {
+TOFType TOFSensor::begin() {
 	Wire.begin();
 	Wire.setClock(400000); // use 400 kHz I2C
 
 	Wire.beginTransmission(VL53L1X_ADDR);
 	if (Wire.endTransmission() != 0) {
-		return 0;
+		return TOFType::None;
 	}
 #ifdef TOF_8x8
 	uint16_t modeId = readRegWord(VL53L1X_ADDR, VL53L1X_MODEL_ID_REG);
 	if (modeId != VL53L1X_MODEL_ID) {
 		if (!tof8x8.begin()) {
-			return 0;
+			return TOFType::None;
 		}
 		isTOF8x8 = true;
 		clearDistanceBuffer();
 		tof8x8.setResolution(imageSize * imageSize); //Enable all 64 pads
 		tof8x8.setRangingFrequency(PERIOD8x8_MS);
 		tof8x8.startRanging();
-		return -1;
+		return TOFType::L5CX;
 	}
 #endif // TOF_8x8
 
@@ -92,7 +90,7 @@ int8_t TOF_init() {
 	if (tof.begin(VL53L1X_ADDR, &Wire)) {
 		tof.startRanging();
 		tof.setTimingBudget(PERIOD_MS);
-		return 1;
+		return TOFType::L1X;
 	}
 #else // Pololu
 	tof.setTimeout(500);
@@ -100,13 +98,13 @@ int8_t TOF_init() {
 		tof.setDistanceMode(VL53L1X::Long);
 		tof.setMeasurementTimingBudget(PERIOD_MS * 1000);
 		tof.startContinuous(PERIOD_MS);
-		return 1;
+		return TOFType::L1X;
 	}
 #endif
-	return 0;
+	return TOFType::None;
 }
 
-int16_t TOF_distance() {
+int16_t TOFSensor::getDistance() {
 #ifdef TOF_8x8
 	if (isTOF8x8) {
 		if (tof8x8.isDataReady()) {
@@ -163,7 +161,7 @@ int16_t TOF_distance() {
 #endif
 }
 
-void TOF_setFOV(bool isWide) {
+void TOFSensor::setFOV(bool isWide) {
 #ifdef TOF_8x8
 	if (isTOF8x8) {
 		imageSize = isWide ? 8 : 4;

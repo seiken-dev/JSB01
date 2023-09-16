@@ -1,30 +1,29 @@
 #include <Arduino.h>
+#include <DFRobot_QMC5883.h>
+#include <M5_BH1750FVI.h>
 #include "mydefs.h"
 
-#ifdef TOF_SENSOR
-int8_t TOF_init();
-int16_t TOF_distance();
-void TOF_setFOV(bool isWide = true);
+#define LD14
+// #define VIBRATE_TEST // Vibrates twice per second for 20 ms
 
-#define LONGPRESS_MS 1000
-#endif // TOF_SENSOR
+#if defined(ARDUINO_SEEED_XIAO_RP2040) || (ARDUINO_XIAO_ESP32C3)
+#define XIAO
+#endif
 
-//#define DEBUG_SERIAL
-//#define XIAO_RP2040
-//#define AT_TINY
-
-#ifdef XIAO_RP2040
+#ifdef XIAO
 #undef PIN_LED
+#ifdef ARDUINO_SEEED_XIAO_RP2040
 #define PIN_LED PIN_LED_G
 #define LED_ON LOW
 #define LED_OFF HIGH
+#endif
 #else
 #define LED_ON HIGH
 #define LED_OFF LOW
 #endif
 
-#ifdef XIAO_RP2040
-#define PIN_SONAR D5
+#ifdef XIAO
+#define PIN_SONAR D6
 #define PIN_BUTTON1 D0
 #define PIN_BUTTON2 D1
 #define PIN_VIB D2
@@ -36,26 +35,42 @@ void TOF_setFOV(bool isWide = true);
 #define PIN_VIB PIN_PA3
 #endif
 
-#define TIMEOUT (500 * 1000)
+#ifdef TOF_SENSOR
+#include "TOFSensor.h"
+TOFSensor tof;
+constexpr uint32_t LONGPRESS_MS = 1000;
+#endif // TOF_SENSOR
 
-#define RANGE_MIN 1
-#define RANGE_MAX 5
-#define RANGE_DEFAULT 3
+DFRobot_QMC5883 compass(&Wire, QMC5883_ADDRESS);
+M5_BH1750FVI lightSensor;
 
-#define FLASH_MS 20
-#define FLASH_RATIO 4
-#define MIN_PERIOD 75
+constexpr unsigned long PULSEIN_TIMEOUT = 500 * 1000;
+constexpr uint32_t MIN_PERIOD = 75;
 
-void flash(uint16_t ms = FLASH_MS) {
+#ifdef LD14
+constexpr unsigned int LD14_FREQ = 150;
+#endif
+
+void flash(uint16_t ms = 20) {
 #ifdef PIN_LED
 	digitalWrite(PIN_LED, LED_ON);
 #endif
+#ifdef LD14
+	tone(PIN_VIB, LD14_FREQ, ms);
+#else
     digitalWrite(PIN_VIB, HIGH);
+#endif
 	delay(ms);
 #ifdef PIN_LED
 	digitalWrite(PIN_LED, LED_OFF);
 #endif
+#ifndef LD14
     digitalWrite(PIN_VIB, LOW);
+#endif
+}
+
+bool buttonPressing(uint8_t pin) {
+	return digitalRead(pin) == LOW;
 }
 
 bool buttonPressed(uint8_t pin, bool& btn) {
@@ -86,20 +101,29 @@ bool buttonLongPressed(uint8_t pin, unsigned long& btnTick) {
 }
 #endif // TOF_SENSOR
 
-enum Sonar {
-	NONE, MB10x0, MB10x3, TOF, TOF8x8
+enum class Sonar : uint8_t {
+	None, MB10x0, MB10x3, TOF, TOF8x8
 };
-Sonar sonar = Sonar::NONE;
+Sonar sonar = Sonar::None;
+
+enum class Sensor : uint8_t {
+	None, Distance, GeoMag, Light
+};
+Sensor sensor = Sensor::None;
 
 #ifdef DEBUG_SERIAL
 static const char* sonarNames[] = { "NONE", "MB10x0", "MB10x3", "VL53L1X", "VL53L5CX" };
 #endif
 
+bool initDistanceSensor();
+bool initGeoMagSensor();
+bool initLightSensor();
+
 void setup() {
 	Serial_begin();
 	Serial_println("start");
 
-#ifdef XIAO_RP2040
+#ifdef ARDUINO_SEEED_XIAO_RP2040
 	pinMode(NEOPIXEL_POWER, OUTPUT);
 	digitalWrite(NEOPIXEL_POWER, HIGH);
 	pinMode(PIN_LED_R, OUTPUT);
@@ -118,73 +142,168 @@ void setup() {
 	pinMode(PIN_BUTTON1, INPUT_PULLUP);
 	pinMode(PIN_BUTTON2, INPUT_PULLUP);
 	pinMode(PIN_VIB, OUTPUT);
-	delay(1000); // wait USB Serial
 
+	delay(500); // wait USB Serial
+
+	bool result;
+	if (buttonPressing(PIN_BUTTON1)) {
+		sensor = Sensor::GeoMag;
+		if (result = initGeoMagSensor()) {
+			flash();
+			delay(200);
+			flash(50);
+		}
+	} else if (buttonPressing(PIN_BUTTON2)) {
+		sensor = Sensor::Light;
+		if (result = initLightSensor()) {
+			flash();
+			delay(200);
+			flash();
+			delay(200);
+			flash(50);
+		}
+	} else {
+		sensor = Sensor::Distance;
+		if (result = initDistanceSensor()) {
+			flash();
+			delay(200);
+			flash();
+		}
+	}
+	if (!result) {
+		sensor = Sensor::None;
+		flash();
+	    delay(500);
+		flash();
+	    delay(500);
+		flash();
+#ifdef ARDUINO_SEEED_XIAO_RP2040
+	    digitalWrite(PIN_LED_R, LED_ON);
+#endif
+		while(true) {
+			delay(100);
+		}
+	}
+    delay(500);
+}
+
+bool initDistanceSensor() {
 	Serial_print("detect sonar...");
 
-	uint32_t value = (uint32_t)pulseIn(PIN_SONAR, HIGH, TIMEOUT);
+	uint32_t value = (uint32_t)pulseIn(PIN_SONAR, HIGH, PULSEIN_TIMEOUT);
 	if (value != 0) {
 		delay(20);
 		unsigned long t = millis();
-		pulseIn(PIN_SONAR, HIGH, TIMEOUT);
+		pulseIn(PIN_SONAR, HIGH, PULSEIN_TIMEOUT);
 		uint32_t interval = (uint32_t)(millis() - t);
 		if (interval > 20) {
 			sonar = interval < 60 ? Sonar::MB10x0 : Sonar::MB10x3; // MB10x0:20Hz, MB10x3:10Hz
 		}
 	} else {
 #ifdef TOF_SENSOR
-		uint8_t r = TOF_init();
-		if (r > 0) {
+		TOFType type = tof.begin();
+		if (type == TOFType::L1X) {
 			sonar = Sonar::TOF;
-		} else if (r < 0) {
+		} else if (type == TOFType::L5CX) {
 			sonar = Sonar::TOF8x8;
 		}
 #endif
 	}
+	Serial_printf("%s\n", sonarNames[(int)sonar]);
 
-	Serial_printf("%s\n", sonarNames[sonar]);
-
-	if (sonar != Sonar::NONE) {
-		flash();
-	    delay(200);
-		flash();
-	} else {
-		flash();
-	    delay(500);
-		flash();
-	    delay(500);
-		flash();
-#ifdef XIAO_RP2040
-	    digitalWrite(PIN_LED_R, LED_ON);
-#endif
+	if (sonar == Sonar::None) {
+		return false;
 	}
-    delay(500);
+	return true;
 }
 
-#define MIN_DELAY 20
+bool initGeoMagSensor() {
+	Serial_print("GeoMag Sensor(QMC5883L)...");
+	if (!compass.begin()) {
+		Serial_println(" not found");
+		return false;
+	}
+	Serial_println(" start");
+	compass.setDeclinationAngle((4.0f + (26.0f / 60.0f)) / (180.f / 3.1416f)); // TODO
+	return true;
+
+}
+
+bool initLightSensor() {
+	Serial_print("Light Sensor(BH1750FVI)...");
+	if (!lightSensor.begin(&Wire)) {
+		Serial_println(" not found");
+		return false;
+	}
+	Serial_println(" start");
+	lightSensor.setMode(CONTINUOUSLY_H_RESOLUTION_MODE);
+	return true;
+}
+
+int32_t loopDistanceSensor(unsigned long tick, uint32_t& period);
+int32_t loopGeoMagSensor(unsigned long tick, uint32_t& period);
+int32_t loopLightSensor(unsigned long tick, uint32_t& period);
 
 void loop() {
 	static unsigned long startTick = 0;
-	static int32_t prevDistance = 0;
+	static int32_t prevValue = -1;
 	static uint32_t period = 0;
-	static uint16_t maxRange = RANGE_DEFAULT;
+
+	unsigned long tick = millis();
+	if (period != 0 && tick - startTick >= period) {
+		flash();
+		startTick = tick;
+	}
+
+	int minDelay;
+	int value;
+	if (sensor == Sensor::Distance) {
+		value = loopDistanceSensor(tick, period);
+		minDelay = 20;
+	} else if (sensor == Sensor::GeoMag) {
+		value = loopGeoMagSensor(tick, period);
+		minDelay = 100;
+	} else if (sensor == Sensor::Light) {
+		value = loopLightSensor(tick, period);
+		minDelay = 100;
+	}
+	if (period > 0 && period < MIN_PERIOD) {
+		period = MIN_PERIOD;
+	}
+
+	uint32_t elapse = (uint32_t)(millis() - tick);
+	if (value != prevValue) {
+		if (period != 0) {
+			Serial_printf("%d T=%dms (%d)\n", value, period, elapse);
+		} else {
+			Serial_printf("%d\n", value);
+		}
+	}
+	prevValue = value;
+
+	if (elapse < minDelay) {
+		delay(minDelay - elapse);
+	}
+}
+
+int32_t loopDistanceSensor(unsigned long tick,  uint32_t& period) {
+	constexpr uint8_t RANGE_MIN = 1;
+	constexpr uint8_t RANGE_MAX = 5;
+	constexpr uint8_t RANGE_DEFAULT = 3;
+	constexpr int32_t FLASH_RATIO = 4;
+
+	static uint8_t maxRange = RANGE_DEFAULT;
 	static bool btn1 = false;
 	static bool btn2 = false;
 #ifdef TOF_SENSOR
 	static unsigned long btn1Tick = 0;
 	static unsigned long btn2Tick = 0;
 #endif
-	unsigned long tick = millis();
-
-	if (period != 0 && tick - startTick >= period) {
-		flash();
-		startTick = tick;
-	}
 
 #ifdef TOF_SENSOR
-	if (sonar == Sonar::TOF) {
+	if (sonar == Sonar::TOF || sonar == Sonar::TOF8x8) {
 		if (buttonLongPressed(PIN_BUTTON1, btn1Tick)) {
-			TOF_setFOV(true);
+			tof.setFOV(true);
 			Serial_println("ROI 16x16");
 			flash(30);
 			delay(100);
@@ -192,7 +311,7 @@ void loop() {
 			delay(500);
 		}
 		if (buttonLongPressed(PIN_BUTTON2, btn2Tick)) {
-			TOF_setFOV(false);
+			tof.setFOV(false);
 			Serial_println("ROI 4x4");
 			flash(80);
 			delay(100);
@@ -225,11 +344,11 @@ void loop() {
 
 	int32_t distance;
 #ifdef TOF_SENSOR
-	if (sonar == Sonar::TOF) {
-		distance = TOF_distance();
+	if (sonar == Sonar::TOF || sonar == Sonar::TOF8x8) {
+		distance = tof.getDistance();
 	} else {
 #endif
-	distance = (int32_t)pulseIn(PIN_SONAR, HIGH, TIMEOUT);
+	distance = (int32_t)pulseIn(PIN_SONAR, HIGH, PULSEIN_TIMEOUT);
 #ifdef TOF_SENSOR
 	}
 #endif
@@ -237,26 +356,56 @@ void loop() {
 		distance = distance * 24 / 139; // ≒ / 147.f * 25.4f
 	}
 
-	uint32_t elapse = (uint32_t)(millis() - tick);
-
+#ifdef VIBRATE_TEST
+	period = 500 - 20;
+#else
 	if (distance <= 0 || distance >= maxRange * 1000) {
 		period = 0;
 	} else {
 		period = distance / FLASH_RATIO;
-		if (period < MIN_PERIOD) {
-			period = MIN_PERIOD;
-		}
 	}
-	if (distance != prevDistance) {
-		if (period != 0) {
-			Serial_printf("%d T=%dms (%d)\n", distance, period, elapse);
-		} else {
-			Serial_printf("%d (%d)\n", distance, elapse);
-		}
-	}
-	prevDistance = distance;
+#endif // VIBRATE_TEST
+	return distance;
+}
 
-	if (elapse < MIN_DELAY) {
-		delay(MIN_DELAY - elapse);
+int32_t loopGeoMagSensor(unsigned long tick, uint32_t& period) {
+	constexpr int16_t MAX_ANGLE = 150;
+	constexpr int16_t MIN_ANGLE = 10;
+	constexpr int16_t MAX_PERIOD = 1000;
+
+	sVector_t mag = compass.readRaw();
+	compass.getHeadingDegrees();
+	int32_t value = (int32_t)round(mag.HeadingDegress);
+	int32_t degree = value;
+	if (degree > 180) {
+		degree = 360 - degree;
 	}
+	if (degree >= MAX_ANGLE) {
+		period = 0;
+	} else if (degree <= MIN_ANGLE) {
+		period = MIN_PERIOD;
+	} else {
+		period = (MAX_PERIOD - MIN_PERIOD) * (degree - MIN_ANGLE) / (MAX_ANGLE - MIN_ANGLE) + MIN_PERIOD;
+	}
+	return value;
+}
+
+int32_t loopLightSensor(unsigned long tick, uint32_t& period) {
+	constexpr int16_t MAX_LUX = 5000;
+	constexpr int16_t MIN_LUX = 20;
+	constexpr int16_t MAX_PERIOD = 1000;
+
+	uint16_t lux = lightSensor.getLUX();
+	if (lux < MIN_LUX) {
+		period = 0;
+	} else if (lux >= MAX_LUX) {
+		period = MIN_PERIOD;
+	} else {
+		float logLux = log10f(lux);
+		float logLuxMin = log10f(MIN_LUX);
+		float logLuxMax = log10f(MAX_LUX);
+
+		period = MAX_PERIOD - (uint16_t)((float)(MAX_PERIOD - MIN_PERIOD) * (logLux - logLuxMin) / (logLuxMax - logLuxMin));
+	}
+	return lux;
 }

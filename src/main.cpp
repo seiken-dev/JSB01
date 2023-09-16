@@ -46,6 +46,8 @@ M5_BH1750FVI lightSensor;
 
 constexpr unsigned long PULSEIN_TIMEOUT = 500 * 1000;
 constexpr uint32_t MIN_PERIOD = 75;
+constexpr float DECLINATION_ANGLE = -8.0f; // at Tokyo
+constexpr int32_t COMPASS_ANGLE = 180;
 
 #ifdef LD14
 constexpr unsigned int LD14_FREQ = 150;
@@ -224,7 +226,7 @@ bool initGeoMagSensor() {
 		return false;
 	}
 	Serial_println(" start");
-	compass.setDeclinationAngle((4.0f + (26.0f / 60.0f)) / (180.f / 3.1416f)); // TODO
+	compass.setDeclinationAngle(DECLINATION_ANGLE / (180.f / 3.1416f));
 	return true;
 
 }
@@ -376,6 +378,10 @@ int32_t loopGeoMagSensor(unsigned long tick, uint32_t& period) {
 	sVector_t mag = compass.readRaw();
 	compass.getHeadingDegrees();
 	int32_t value = (int32_t)round(mag.HeadingDegress);
+	value += COMPASS_ANGLE;
+	if (value >= 360) {
+		value -= 360;
+	}
 	int32_t degree = value;
 	if (degree > 180) {
 		degree = 360 - degree;

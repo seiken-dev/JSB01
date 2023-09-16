@@ -41,10 +41,9 @@ void setup() {
   Serial.println("Booting...");
   ioInit();
   mb.begin(pin_sonar, false);
-  vib.begin(pin_vibe, false, false);
-  vib.setFrequency(150);
+  vib.begin(pin_vibe, true, true);
   vib.on();
-  delay(100);
+  delay(500);
   vib.off();
   setPattern(0, 0, 00, 0); // クリア
 #ifdef ARDUINO_XIAO_ESP32C3

@@ -1,8 +1,6 @@
 #include "Arduino.h"
 #include "Vibrator.h"
 #include "Feedback.h"
-#include "esp32-hal-timer.h"
-#include "esp_attr.h"
 
 volatile FeedbackPattern p;
 void setPattern(uint16_t first, uint16_t second, uint16_t third, uint16_t fourth)

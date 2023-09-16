@@ -30,13 +30,11 @@ uint32_t MB10xx::ranging() {
     if (_type == MB10xx::mb_10x0) {
       _currentDistance /= 7;
       _currentDistance *= 12;
-      _currentDistance += (_currentDistance/126);
-      _currentDistance /= 10;
+      _currentDistance += (_currentDistance/126); // 50インチで1cm誤差が出ちゃうので、補正
+      _currentDistance /= 10; // 切り捨ててミリにする
     }
-    Serial.printf("%u   \r", _currentDistance);
   }
   else {
-    Serial.print("E  \r");
     _currentDistance = 0;
   }
   return _currentDistance;

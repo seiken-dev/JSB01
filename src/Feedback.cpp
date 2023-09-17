@@ -1,27 +1,34 @@
 #include "Arduino.h"
 #include "Vibrator.h"
 #include "Feedback.h"
+#include "pico/time.h"
 
 volatile FeedbackPattern p;
+volatile bool wantClear = false;
 void setPattern(uint16_t first, uint16_t second, uint16_t third, uint16_t fourth)
 {
   p.period_1 = first;
   p.period_2 = second;
   p.period_3 = third;
   p.period_4 = fourth;
+  wantClear = true;
   // Serial.printf("%d, %d, %d, %d        \r", p.period_1, p.period_2, p.period_3, p.period_4);
 }
 
 #ifdef ARDUINO_XIAO_ESP32C3
 void IRAM_ATTR feedback()
 #else
-void feedback()
+bool feedback(repeating_timer_t *t)
 #endif
 {
   static uint8_t i = 0; // インターバルのインデックス
   static uint8_t periodCOunt = 0; // インターバルの数
   static unsigned long expire = 0; // インターバル終了時刻
-  // とりあえず振動開始
+  if (wantClear) {
+    expire = 0;
+    i = 0;
+    wantClear = false;
+  }
   if (expire == 0) {
     if (i >= periodCOunt) i = 0; // 最後のインターバルまで処理したので初期化
     // インターバルの数をセット
@@ -40,6 +47,9 @@ void feedback()
     expire = 0;
     if (i < periodCOunt) i++;
   }
+#ifdef ARDUINO_SEEED_XIAO_RP2040
+  return true;
+#endif
 }
 
 #ifdef ARDUINO_XIAO_ESP32C3
@@ -50,5 +60,10 @@ void feedbackBegin() {
   timerAttachInterrupt(feedbackTick, feedback, true);
   timerAlarmWrite(feedbackTick, 5000, true);
   timerAlarmEnable(feedbackTick);
+}
+#else
+repeating_timer_t feedbackTick;
+void feedbackBegin() {
+  add_repeating_timer_ms(1, feedback, nullptr, &feedbackTick);
 }
 #endif

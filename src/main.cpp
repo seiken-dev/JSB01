@@ -1,6 +1,7 @@
 #include <Arduino.h>
-#include <DFRobot_QMC5883.h>
 #include <M5_BH1750FVI.h>
+#include "Compass.h"
+#include "Prefs.h"
 #include "mydefs.h"
 
 #define LD14
@@ -38,16 +39,28 @@
 #ifdef TOF_SENSOR
 #include "TOFSensor.h"
 TOFSensor tof;
-constexpr uint32_t LONGPRESS_MS = 1000;
 #endif // TOF_SENSOR
 
-DFRobot_QMC5883 compass(&Wire, QMC5883_ADDRESS);
+Compass compass;
 M5_BH1750FVI lightSensor;
+
+Prefs prefs;
 
 constexpr unsigned long PULSEIN_TIMEOUT = 500 * 1000;
 constexpr uint32_t MIN_PERIOD = 75;
+constexpr uint32_t LONGPRESS_MS = 1000;
+
 constexpr float DECLINATION_ANGLE = -8.0f; // at Tokyo
 constexpr int32_t COMPASS_ANGLE = 180;
+
+#ifdef ARDUINO_XIAO_ESP32C3
+const char* PREFS_PATH = "/sonar.ini";
+#else
+const char* PREFS_PATH = "sonar.ini";
+#endif
+const char* PREFS_OFFSET_X = "OffsetX";
+const char* PREFS_OFFSET_Y = "OffsetY";
+const char* PREFS_OFFSET_Z = "OffsetZ";
 
 #ifdef LD14
 constexpr unsigned int LD14_FREQ = 150;
@@ -85,7 +98,6 @@ bool buttonPressed(uint8_t pin, bool& btn) {
 	return false;
 }
 
-#ifdef TOF_SENSOR
 bool buttonLongPressed(uint8_t pin, unsigned long& btnTick) {
 	bool b = digitalRead(pin) == LOW;
 	if (b) {
@@ -101,7 +113,6 @@ bool buttonLongPressed(uint8_t pin, unsigned long& btnTick) {
 	}
 	return false;
 }
-#endif // TOF_SENSOR
 
 enum class Sonar : uint8_t {
 	None, MB10x0, MB10x3, TOF, TOF8x8
@@ -226,9 +237,17 @@ bool initGeoMagSensor() {
 		return false;
 	}
 	Serial_println(" start");
-	compass.setDeclinationAngle(DECLINATION_ANGLE / (180.f / 3.1416f));
-	return true;
+	compass.setDeclinationAngle(DECLINATION_ANGLE);
+	compass.setDeviceAngle(COMPASS_ANGLE);
 
+	if (prefs.begin(PREFS_PATH)) {
+		int16_t offsetX = (int16_t)prefs.getInt(PREFS_OFFSET_X);
+		int16_t offsetY = (int16_t)prefs.getInt(PREFS_OFFSET_Y);
+		int16_t offsetZ = (int16_t)prefs.getInt(PREFS_OFFSET_Z);
+		compass.setOffset(offsetX, offsetY, offsetZ);
+		Serial_printf("offsetX=%d offsetY=%d\n", offsetX, offsetY);
+	}
+	return true;
 }
 
 bool initLightSensor() {
@@ -375,13 +394,60 @@ int32_t loopGeoMagSensor(unsigned long tick, uint32_t& period) {
 	constexpr int16_t MIN_ANGLE = 10;
 	constexpr int16_t MAX_PERIOD = 1000;
 
-	sVector_t mag = compass.readRaw();
-	compass.getHeadingDegrees();
-	int32_t value = (int32_t)round(mag.HeadingDegress);
-	value += COMPASS_ANGLE;
-	if (value >= 360) {
-		value -= 360;
+	static bool calibrating = false;
+	static unsigned long calTick;
+	constexpr uint32_t MIN_CALIBRATE_TIME = 1000;
+	static unsigned long btn1Tick = 0;
+	static unsigned long btn2Tick = 0;
+
+	if (buttonLongPressed(PIN_BUTTON1, btn1Tick) && !calibrating) {
+		calibrating = true;
+		compass.startCalibration();
+		Serial_println("calibrate QMC5883L...");
+		flash(30);
+		calTick = millis();
 	}
+	if (!buttonPressing(PIN_BUTTON1) && calibrating) {
+		calibrating = false;
+		compass.endCalibration();
+		if (millis() - calTick >= MIN_CALIBRATE_TIME) {
+			Serial_printf("offsetX=%d offsetY=%d\n", compass.getOffsetX(), compass.getOffsetY());
+			flash();
+			delay(200);
+			flash();
+		} else { // reset offset
+			Serial_println("reset offset");
+			compass.setOffset();
+			flash();
+			delay(200);
+		}
+		prefs.putInt(PREFS_OFFSET_X, compass.getOffsetX());
+		prefs.putInt(PREFS_OFFSET_Y, compass.getOffsetY());
+		prefs.putInt(PREFS_OFFSET_Z, compass.getOffsetZ());
+		prefs.flush();
+	}
+	if (calibrating) {
+		compass.calibrate();
+		period = 0;
+		return 0;
+	}
+
+	compass.read();
+
+	if (buttonLongPressed(PIN_BUTTON2, btn2Tick) && !calibrating) {
+		int32_t degree = compass.getDegree(true);
+		if (degree >= 180) {
+			degree = degree - 360;
+		}
+		compass.setDeclinationAngle(-degree);
+		flash(30);
+		delay(200);
+		flash(30);
+		delay(500);
+	}
+
+	int32_t value = compass.getDegree();
+	Serial_printf("X=%d Y=%d Z=%d\n", compass.getX(), compass.getY(), compass.getZ());
 	int32_t degree = value;
 	if (degree > 180) {
 		degree = 360 - degree;

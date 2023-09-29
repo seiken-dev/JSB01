@@ -41,7 +41,7 @@ bool feedback(repeating_timer_t *t)
     else if (i == 1 && p.period_2) expire = millis()+p.period_2;
     else if (i == 2 && p.period_3) expire = millis()+p.period_3;
     else if (i == 3 && p.period_4) expire = millis()+p.period_4;
-    if (p.period_1) vib.on(20);
+    if (p.period_1) vib.on(10);
   }
   else if (millis() > expire) {
     expire = 0;

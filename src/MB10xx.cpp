@@ -8,6 +8,7 @@ bool MB10xx::begin(uint8_t pin, bool init) {
   }
   _pin = pin;
   _type = detectMb();
+  Serial.println(_type);
   return (_type != MB10xx::mb_none) ? true : false;
 }
 

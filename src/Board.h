@@ -1,11 +1,14 @@
 #pragma once
+#include "Arduino.h"
+#include "Wire.h"
+
 constexpr uint8_t pin_sonar = D6;
 constexpr uint8_t pin_button1 = D0;
 constexpr uint8_t pin_button2 = D1;
 constexpr uint8_t pin_vibe = D2;
 
 class JSB01_CLASS {
-public:
+ public:
   bool begin();
   bool i2cExist(uint8_t addr);
   void i2cWriteByte(uint8_t addr, byte data);

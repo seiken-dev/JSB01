@@ -13,7 +13,7 @@
 * ESP32C3: XIAO ESP32C3をマイコンとして使って、esp-idfを開発環境にするブランチ
 * RP2040: RP2040あるいは XIAO RP2040を使って、pico-sdkを開発環境にするブランチ
 * main: そのうちメインになるだろうブランチ
-* Experimental: 各種実験ブランチ
+* Experimental: 各種実験ブランチ。c.mosブレアンチの次に動く可能性があるブランチ
 
 ## 諸々
 

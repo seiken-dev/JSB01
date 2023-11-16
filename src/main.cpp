@@ -69,20 +69,23 @@ void sonarMode() {
   uint8_t cmd = commandDispatch();
   if (cmd) {
     previousUnit = 0;
+    setPattern(0, 0, 0, 0);
     if (cmd == 1 && maxRange <= 10) {
       maxRange++;
-      vib.on(150);
+      vib.on(100);
+      delay(150);
     } else if (cmd == 2 && maxRange > 1) {
       maxRange--;
-      vib.on(150);
+      vib.on(100);
+      delay(150);
     } else if (cmd == 5) {
       maxRange = 4;
       vib.on(200);
+      delay(250);
     }
   }
 
   uint16_t unit = mb.getDistance() / 500;
-  Serial.printf("%u     \r", unit);
   if (unit != previousUnit) {
     if (unit < maxRange) {
       setPattern(patterns[unit][0], patterns[unit][1], patterns[unit][2],
@@ -170,7 +173,7 @@ void setup() {
   }
 }
 
-void compassMode() {
+/*void compassMode() {
   constexpr int16_t MAX_ANGLE = 150;
   constexpr int16_t MIN_ANGLE = 10;
   constexpr int16_t MAX_PERIOD = 500;
@@ -242,6 +245,7 @@ void compassMode() {
   }
   return value;
 }
+*/
 
 void loop() {
   if (mode == BootMode::sonar) {
@@ -254,6 +258,6 @@ void loop() {
       delay(delayTime);
     }
   } else if (mode == BootMode::compass) {
-    compassMode();
+    // compassMode();
   }
 }

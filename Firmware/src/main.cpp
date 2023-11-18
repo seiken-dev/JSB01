@@ -23,7 +23,7 @@
 #define LED_OFF LOW
 #endif
 
-#ifdef XIAO
+#if defined(XIAO) || (ARDUINO_RASPBERRY_PI_PICO)
 #define PIN_SONAR D6
 #define PIN_BUTTON1 D0
 #define PIN_BUTTON2 D1
@@ -463,7 +463,7 @@ int32_t loopGeoMagSensor(unsigned long tick, uint32_t& period) {
 }
 
 int32_t loopLightSensor(unsigned long tick, uint32_t& period) {
-	constexpr int16_t MAX_LUX = 5000;
+	constexpr int16_t MAX_LUX = 1500;
 	constexpr int16_t MIN_LUX = 20;
 	constexpr int16_t MAX_PERIOD = 1000;
 

@@ -3,6 +3,64 @@
 #include <Wire.h>
 #include "TOFSensor.h"
 
+#define VL53L3X
+
+#ifdef VL53L3X
+
+#include <vl53lx_class.h>
+#define VL53L3CX_ADDR 0x29
+
+static VL53LX tof(&Wire, D10);
+
+TOFType TOFSensor::begin() {
+	Wire.begin();
+	Wire.setClock(400000); // use 400 kHz I2C
+
+	Wire.beginTransmission(VL53L3CX_ADDR);
+	if (Wire.endTransmission() != 0) {
+		return TOFType::None;
+	}
+	tof.begin();
+	tof.VL53LX_Off();
+	tof.InitSensor(0x12);
+	tof.VL53LX_SetDistanceMode(VL53LX_DISTANCEMODE_LONG);
+	tof.VL53LX_StartMeasurement();
+	return TOFType::L1X;
+}
+
+int16_t TOFSensor::getDistance() {
+	VL53LX_MultiRangingData_t MultiRangingData;
+	VL53LX_MultiRangingData_t *pMultiRangingData = &MultiRangingData;
+	uint8_t NewDataReady = 0;
+	int status;
+	int16_t distance = -1;
+
+	do {
+		status = tof.VL53LX_GetMeasurementDataReady(&NewDataReady);
+	} while (!NewDataReady);
+
+	if (status == 0 && NewDataReady != 0) {
+		status = tof.VL53LX_GetMultiRangingData(pMultiRangingData);
+		int no_of_object_found = pMultiRangingData->NumberOfObjectsFound;
+
+		for (int i = 0; i < no_of_object_found; i++) {
+			int16_t d = pMultiRangingData->RangeData[i].RangeMilliMeter;
+			if (distance == -1 || d < distance) {
+				distance = d;
+			}
+		}
+		if (status==0) {
+			status = tof.VL53LX_ClearInterruptAndStartMeasurement();
+		}
+	}
+	return distance;
+}
+
+void TOFSensor::setFOV(bool isWide) {
+}
+
+#else // VL53L3X
+
 #ifdef TOF_ADAFRUIT
 #include "Adafruit_VL53L1X.h"
 static Adafruit_VL53L1X tof = Adafruit_VL53L1X();
@@ -180,5 +238,7 @@ void TOFSensor::setFOV(bool isWide) {
 	tof.setROISize(size, size);
 #endif
 }
+
+#endif // VL53L3X
 
 #endif // TOF_SENSOR

@@ -43,9 +43,6 @@ MaxBotixの超音波センサー[MB10XXシリーズ](https://maxbotix.com/collec
 <img alt="JSB01_R3_top_s" width="40%" src="./images/JSB01_R3_top_s.png">
 <img alt="JSB01_R3_bottom_s" width="40%" src="./images/JSB01_R3_bottom_s.png">
 
-![JSB01_R3_top_s](https://github.com/ji6czd/JSB01/assets/46808493/99904b6f-b261-4d20-a683-1630192a819a)
-![JSB01_R3_bottom_s](https://github.com/ji6czd/JSB01/assets/46808493/1dba076f-e9bd-41c3-a57f-78043a44203c)
-
 表面実装部品(SMD)は[JLCPCB](https://jlcpcb.com/)などPCB基板発注業者で実装できます。それ以外にはんだ付けする必要な部品のリストを載せます。
 
 - [リニア振動アクチュエータ LD14](https://akizukidenshi.com/catalog/g/gP-06838/)<br>
@@ -57,7 +54,6 @@ MaxBotixの超音波センサー[MB10XXシリーズ](https://akizukidenshi.com/c
 
 他に、電流測定用のJP1に3ピンヘッダを付けてジャンパピンを付けるか、JP2のソルダジャンパーをはんだで繋げます。<br>
 <img alt="JSB01_R3" width="50%" src="./images/JSB01_R3.jpg">
-![JSB01_R3](https://github.com/ji6czd/JSB01/assets/46808493/10aa4eb0-593c-4fca-ac2e-712fe8f4515f)
 
 # 基板の組み立て(Rev.1)
 <img alt="JSB01_R1_top_s" width="40%" src="./images/JSB01_R1_top_s.png">

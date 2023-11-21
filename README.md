@@ -1,7 +1,7 @@
 # JSB01
 <p align="center">
-<img alt="JSB01" width="1%" src="./images/JSB01.jpg">
-![JSB01](https://github.com/ji6czd/JSB01/assets/46808493/dc1a011a-5aa1-46ef-b45c-8d0b37e04553)</p>
+<img alt="JSB01" width="50%" src="./images/JSB01.jpg">
+</p>
 
 視覚障害者の歩行支援デバイスです。距離センサー、地磁気センサー(コンパス)、照度センサーを備え、振動によって情報を伝えます。
 
@@ -63,17 +63,12 @@ MaxBotixの超音波センサー[MB10XXシリーズ](https://akizukidenshi.com/c
 <img alt="JSB01_R1_top_s" width="40%" src="./images/JSB01_R1_top_s.png">
 <img alt="JSB01_R1_bottom_s" width="40%" src="./images/JSB01_R1_bottom_s.png">
 
-![JSB01_R1_top_s](https://github.com/ji6czd/JSB01/assets/46808493/af342050-1f01-45a6-9210-e9a844a8de18)
-![JSB01_R1_bottom_s](https://github.com/ji6czd/JSB01/assets/46808493/1564a8d8-c1de-498c-9741-14c4ef251f58)
-
 最初に作った基板です。リビジョンが跳んでいるのは、Rev.2から3Dプリントケースを作ったためで、設計した基板はこの２種類だけです。これは[キャンドゥのケース](https://ec.cando-web.co.jp/item/4582547004810/)に収めるサイズで作りました。[Seeed Studio XIAO](https://wiki.seeedstudio.com/SeeedStudio_XIAO_Series_Introduction/)シリーズが載るソケットと、超音波センサーの他に[ストロベリーリナックス](https://strawberry-linux.com)の[TOFセンサー](https://strawberry-linux.com/catalog/items?code=15311)を付けられます。Rev.3以外に必要な部品のリストを載せます。
 - [XIAO RP2040](https://wiki.seeedstudio.com/XIAO-RP2040/)<br>
-<img alt="XIAO_pin" width="256px" src="./images/XIAO_pin.jpg">
-![XIAO_pin](https://github.com/ji6czd/JSB01/assets/46808493/3c3769a9-32f2-4721-b9a3-268bb2cfc7c1)<br>
+<img alt="XIAO_pin" width="256px" src="./images/XIAO_pin.jpg"><br>
 高さを低く収めるために、上からピンヘッダを差し込んではんだ付けします。
 - [TOFセンサー](https://strawberry-linux.com/catalog/items?code=15311)<br>
-<img alt="TOFsensor_pin" width="256px" src="./images/TOFsensor_pin.jpg">
-![TOFsensor_pin](https://github.com/ji6czd/JSB01/assets/46808493/b8cf1475-ef8a-4f85-bf36-7aec07570b7c)<br>
+<img alt="TOFsensor_pin" width="256px" src="./images/TOFsensor_pin.jpg"><br>
 このように、上下逆向きにして裏に[L型ピンヘッダ](https://akizukidenshi.com/catalog/g/gC-12985/)を付けます。
 - [シングルピンソケット(低メス)](https://akizukidenshi.com/catalog/g/gC-03138/)<br>
 XIAO RP2040とTOFセンサーを載せるために使います。
@@ -81,6 +76,6 @@ XIAO RP2040とTOFセンサーを載せるために使います。
 - [単4電池ボックス×2](https://akizukidenshi.com/catalog/g/gP-02670/)
 <br>
 <img alt="JSB01_R1" width="50%" src="./images/JSB01_R1.jpg">
-![JSB01_R1](https://github.com/ji6czd/JSB01/assets/46808493/a00c09a7-527e-4f68-914c-bb45b02c711e)
 
 # 3Dプリントケース
+R2(r2)がRev.1基板用、R3(r3)がRev.3基板用のケースです。Rev.1用ケースでは、照度センサー用の穴をチップの上面に開けていましたが、Rev.3では凹面鏡の様に加工して前方からの光を取り入れるようにしました。そのため、凹面鏡の部分を[メタリックの塗料](https://www.mr-hobby.com/ja/product1/category_10/3670.html)で塗る必要があります。

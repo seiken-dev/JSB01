@@ -40,8 +40,7 @@ MaxBotixの超音波センサー[MB10XXシリーズ](https://maxbotix.com/collec
 
 
 # 基板の組み立て(Rev.3)
-<img alt="JSB01_R3_top_s" width="40%" src="./images/JSB01_R3_top_s.png">
-<img alt="JSB01_R3_bottom_s" width="40%" src="./images/JSB01_R3_bottom_s.png">
+<img alt="JSB01_R3_top_s" width="40%" src="./images/JSB01_R3_top_s.png">  <img alt="JSB01_R3_bottom_s" width="40%" src="./images/JSB01_R3_bottom_s.png">
 
 表面実装部品(SMD)は[JLCPCB](https://jlcpcb.com/)などPCB基板発注業者で実装できます。それ以外にはんだ付けする必要な部品のリストを載せます。
 
@@ -56,8 +55,7 @@ MaxBotixの超音波センサー[MB10XXシリーズ](https://akizukidenshi.com/c
 <img alt="JSB01_R3" width="50%" src="./images/JSB01_R3.jpg">
 
 # 基板の組み立て(Rev.1)
-<img alt="JSB01_R1_top_s" width="40%" src="./images/JSB01_R1_top_s.png">
-<img alt="JSB01_R1_bottom_s" width="40%" src="./images/JSB01_R1_bottom_s.png">
+<img alt="JSB01_R1_top_s" width="40%" src="./images/JSB01_R1_top_s.png">  <img alt="JSB01_R1_bottom_s" width="40%" src="./images/JSB01_R1_bottom_s.png">
 
 最初に作った基板です。リビジョンが跳んでいるのは、Rev.2から3Dプリントケースを作ったためで、設計した基板はこの２種類だけです。これは[キャンドゥのケース](https://ec.cando-web.co.jp/item/4582547004810/)に収めるサイズで作りました。[Seeed Studio XIAO](https://wiki.seeedstudio.com/SeeedStudio_XIAO_Series_Introduction/)シリーズが載るソケットと、超音波センサーの他に[ストロベリーリナックス](https://strawberry-linux.com)の[TOFセンサー](https://strawberry-linux.com/catalog/items?code=15311)を付けられます。Rev.3以外に必要な部品のリストを載せます。
 - [XIAO RP2040](https://wiki.seeedstudio.com/XIAO-RP2040/)<br>

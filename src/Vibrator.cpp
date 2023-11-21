@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "Vibrator.h"
 
-#ifdef ARDUINO_SEEED_XIAO_RP2040
+#ifdef ARDUINO_RASPBERRY_PI_PICO
 #include "hardware/pwm.h"
 #endif
 

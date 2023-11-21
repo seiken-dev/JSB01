@@ -47,7 +47,7 @@ bool feedback(repeating_timer_t *t)
     expire = 0;
     if (i < periodCOunt) i++;
   }
-#ifdef ARDUINO_SEEED_XIAO_RP2040
+#ifdef ARDUINO_RASPBERRY_PI_PICO
   return true;
 #endif
 }

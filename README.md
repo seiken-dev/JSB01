@@ -13,6 +13,8 @@ PlatformIOでビルドできるソースコードです(動作テスト用)。[X
 - **Blender**<br>
 3Dプリントケース作成用のBlenderのプロジェクトファイルと、発注に使用したSTLファイルです。
 
+※ **KiCad**と**Blender**のデータは、**Creative Commons** [**CC BY**](https://creativecommons.org/licenses/by/4.0/legalcode.ja)のライセンスの元で、自由に使用/改変/製作して頂いて構いません。ただし、データや製作物に対しては作者は一切の責任を負いません。
+
 # 使い方
 動作テスト用コードの使い方です。
 ### 距離センサーモード

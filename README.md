@@ -1,4 +1,4 @@
-<link href="./markdown.css" rel="stylesheet"></link>
+<link href="https://kevinburke.bitbucket.io/markdowncss/markdown.css" rel="stylesheet"></link>
 
 # JSB01
 <p align="center">

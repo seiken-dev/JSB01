@@ -44,15 +44,13 @@ uint32_t MB10xx::ranging() {
 }
 
 uint32_t MB10xx::getDistance() {
-  _currentDistance = duration;
-  if (_currentDistance >= 147*10 && _currentDistance <= 147*240) {
-    // インチをミリに変換
-    if (_type == MB10xx::mb_10x0) {
-      _currentDistance /= 7;
-      _currentDistance *= 12;
-      _currentDistance += (_currentDistance/126); // 50インチで1cm誤差が出ちゃうので、補正
+  if (duration == 0) return _currentDistance;
+  if (duration >= 147*10 && duration <= 147*251) {
+    // 距離はインチ、ミリに変換
+    _currentDistance = duration / 7;
+    _currentDistance *= 12;
+     _currentDistance += (_currentDistance/126); // 50インチで1cm誤差が出ちゃうので、補正
       _currentDistance /= 10; // 切り捨ててミリにする
-    }
   }
   else {
     _currentDistance = 0xffffffff;

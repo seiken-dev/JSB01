@@ -48,7 +48,7 @@ void cbFeedback(TimerHandle_t xTimerID)
 }
 
 void feedbackBegin() {
-  FeedbackTimer.begin(1, cbFeedback);
+  FeedbackTimer.begin(10, cbFeedback);
   setPattern(0,0,0,0);
   FeedbackTimer.start();
 }

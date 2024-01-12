@@ -9,8 +9,14 @@ volatile static uint32_t duration = 0;
 static void cbRaging() {
   static uint32_t start = 0;
   if (start != 0) {
-    duration = micros() - start;
-    start = 0;
+    uint32_t end = micros();
+    duration = end - start;
+    if(duration >= 255*147) {
+      duration = 0;
+      start = end;
+    } else {
+      start = 0;
+    }
   } else {
     start = micros();
     duration = 0;

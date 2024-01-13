@@ -4,12 +4,12 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
-project(stargazer C CXX ASM)
+project(jsb01 C CXX ASM)
 pico_sdk_init()
 
-add_executable(stargazer src/main.cpp)
-target_link_libraries(stargazer pico_stdlib)
-pico_enable_stdio_usb(stargazer 1)
-pico_enable_stdio_uart(stargazer 0)
+add_executable(jsb01 src/main.cpp)
+target_link_libraries(jsb01 pico_stdlib)
+pico_enable_stdio_usb(jsb01 1)
+pico_enable_stdio_uart(jsb01 0)
 
-pico_add_extra_outputs(stargazer)
+pico_add_extra_outputs(jsb01)

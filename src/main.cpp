@@ -85,7 +85,8 @@ void sonarMode() {
     }
   }
 
-  uint16_t unit = mb.getDistance() / 500;
+  uint16_t unit = mb.getDistance();
+  unit /= 500; // 50cm単位でフィードバックするので、５０で割ってある
   if (unit != previousUnit) {
     if (unit < maxRange) {
       setPattern(patterns[unit][0], patterns[unit][1], patterns[unit][2],

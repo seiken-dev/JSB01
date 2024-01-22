@@ -1,6 +1,5 @@
 #include "Arduino.h"
 #include "MB10xx.h"
-#include <cstdio>
 
 bool MB10xx::begin(uint8_t pin, bool init) {
   if (init) {
@@ -27,7 +26,7 @@ MB10xx::mbtype_t MB10xx::detectMb() {
 
 uint32_t MB10xx::ranging() {
   _currentDistance = pulseIn(_pin, HIGH, 500 * 1000);
-  if (_currentDistance >= 147*10 && _currentDistance <= 147*240) {
+  if (_currentDistance <= 147*250) {
     // インチをミリに変換
     if (_type == MB10xx::mb_10x0) {
       _currentDistance /= 7;

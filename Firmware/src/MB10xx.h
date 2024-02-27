@@ -2,6 +2,7 @@
 // Maxbotic ultrasonic sensor MB10xx
 #include <cstdint>
 
+constexpr int maxDetectRange = 220; // inch
 class MB10xx {
   public:
   enum mbtype_t {

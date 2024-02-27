@@ -26,7 +26,7 @@ MB10xx::mbtype_t MB10xx::detectMb() {
 
 uint32_t MB10xx::ranging() {
   _currentDistance = pulseIn(_pin, HIGH, 500 * 1000);
-  if (_currentDistance <= 147*250) {
+  if (_currentDistance < 147*maxDetectRange) {
     // インチをミリに変換
     if (_type == MB10xx::mb_10x0) {
       _currentDistance /= 7;

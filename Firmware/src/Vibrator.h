@@ -17,7 +17,7 @@ class Vibrator {
   static bool _ledc;
   static bool _on;
   static unsigned int _freq;
-#ifdef ARDUINO_RASPBERRY_PI_PICO
+#if defined ARDUINO_SEEED_XIAO_RP2040 || ARDUINO_RASPBERRY_PI_PICO
   static int64_t vibOffCB(alarm_id_t id, void *user_data);
 #endif
 };

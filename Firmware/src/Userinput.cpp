@@ -12,7 +12,12 @@ bool TactSw::init(uint8_t pin) {
 
 TactSw::status_t TactSw::check() {
   TactSw::status_t ret = none;
-  PinStatus status = digitalRead(_pin);
+#if defined ARDUINO_SEEED_XIAO_RP2040 || ARDUINO_RASPBERRY_PI_PICO
+  PinStatus status;
+#else
+  int status;
+#endif
+  status = digitalRead(_pin);
   if (status == LOW) {
     if (_prev == false) {
       _prev = true;

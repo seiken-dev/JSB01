@@ -1,7 +1,6 @@
 #include "Arduino.h"
 #include "Vibrator.h"
 #include "Feedback.h"
-#include "pico/time.h"
 
 volatile FeedbackPattern p;
 volatile bool wantClear = false;
@@ -47,7 +46,7 @@ bool feedback(repeating_timer_t *t)
     expire = 0;
     if (i < periodCOunt) i++;
   }
-#ifdef ARDUINO_RASPBERRY_PI_PICO
+#ifndef ARDUINO_XIAO_ESP32C3
   return true;
 #endif
 }

@@ -70,7 +70,7 @@ void sonarMode() {
   if (cmd) {
     previousUnit = 0;
     setPattern(0, 0, 0, 0);
-    if (cmd == 1 && maxRange <= 10) {
+    if (cmd == 1 && maxRange < 10) {
       maxRange++;
       vib.on(100);
       delay(150);
@@ -86,7 +86,7 @@ void sonarMode() {
   }
 
   uint16_t unit = mb.getDistance();
-  unit /= 500; // 50cm単位でフィードバックするので、５０で割ってある
+  unit /= 500;  // 50cm単位でフィードバックするので、５０で割ってある
   if (unit != previousUnit) {
     if (unit < maxRange) {
       setPattern(patterns[unit][0], patterns[unit][1], patterns[unit][2],
@@ -196,11 +196,8 @@ void setup() {
     calibrating = false;
     compass.endCalibration();
     if (millis() - calTick >= MIN_CALIBRATE_TIME) {
-      Serial_printf("offsetX=%d offsetY=%d\n", compass.getOffsetX(), compass.getOffsetY());
-      flash();
-      delay(200);
-      flash();
-    } else { // reset offset
+      Serial_printf("offsetX=%d offsetY=%d\n", compass.getOffsetX(),
+compass.getOffsetY()); flash(); delay(200); flash(); } else { // reset offset
       Serial_println("reset offset");
       compass.setOffset();
       flash();
@@ -230,19 +227,19 @@ void setup() {
     flash(30);
     delay(500);
   }
-  
+
   int32_t value = compass.getDegree();
-  Serial_printf("X=%d Y=%d Z=%d\n", compass.getX(), compass.getY(), compass.getZ());
-  int32_t degree = value;
-  if (degree > 180) {
-    degree = 360 - degree;
+  Serial_printf("X=%d Y=%d Z=%d\n", compass.getX(), compass.getY(),
+compass.getZ()); int32_t degree = value; if (degree > 180) { degree = 360 -
+degree;
   }
   if (degree >= MAX_ANGLE) {
     period = 0;
   } else if (degree <= MIN_ANGLE) {
     period = MIN_PERIOD;
   } else {
-    period = (MAX_PERIOD - MIN_PERIOD) * (degree - MIN_ANGLE) / (MAX_ANGLE - MIN_ANGLE) + MIN_PERIOD;
+    period = (MAX_PERIOD - MIN_PERIOD) * (degree - MIN_ANGLE) / (MAX_ANGLE -
+MIN_ANGLE) + MIN_PERIOD;
   }
   return value;
 }

@@ -15,6 +15,8 @@ TactSw btns[2];
 BH1750FVI light;
 Compass compass;
 
+constexpr int MaxDetectUnit = 10;
+
 int commandDispatch() {
   TactSw::status_t btn1 = btns[0].check();
   TactSw::status_t btn2 = btns[1].check();
@@ -70,7 +72,7 @@ void sonarMode() {
   if (cmd) {
     previousUnit = 0;
     setPattern(0, 0, 0, 0);
-    if (cmd == 1 && maxRange < 10) {
+    if (cmd == 1 && maxRange < MaxDetectUnit) {
       maxRange++;
       vib.on(100);
       delay(150);
@@ -98,29 +100,21 @@ void sonarMode() {
   }
 }
 
-uint16_t lightMode() {
-  constexpr int16_t MAX_LUX = 5000;
-  constexpr int16_t MIN_LUX = 20;
-  constexpr int16_t MAX_PERIOD = 1000;
-  constexpr int16_t MIN_PERIOD = 10;
+uint16_t measureBrightness() {
+  constexpr float LogMax = 12.0;  // log2(4096) 最大の明るさ
+  constexpr uint16_t BaseV = 20;  // 最小振動間隔
 
   uint16_t lux = light.getLUX();
-  uint16_t period = 0;
-  if (lux < MIN_LUX) {
-    period = 0;
-  } else if (lux >= MAX_LUX) {
-    period = MIN_PERIOD;
+  float period = 0;  // 振動間隔、光量が少ないほど長くなる
+  int v = 0; // 振動間隔を整数にした値
+  if (lux) {
+    period = LogMax - log2(lux);
+    v = static_cast<uint16_t>(period * 40) + BaseV;
   } else {
-    float logLux = log10f(lux);
-    float logLuxMin = log10f(MIN_LUX);
-    float logLuxMax = log10f(MAX_LUX);
-
-    period =
-        MAX_PERIOD - (uint16_t)((float)(MAX_PERIOD - MIN_PERIOD) *
-                                (logLux - logLuxMin) / (logLuxMax - logLuxMin));
+    v = 0;
   }
-  Serial.printf("%03d\r", period);
-  return period;
+  Serial.printf("LUX=%04d period=%d    \r", lux, v);
+  return v;
 }
 
 BootMode mode = BootMode::none;
@@ -159,14 +153,14 @@ void setup() {
   btns[1].init(pin_button2);
   vib.begin(pin_vibe, true, true);
   mode = selectBootMode();
+  setPattern(0, 0, 0, 0);  // クリア
+  feedbackBegin();
   if (mode == BootMode::sonar) {
     Serial.printf("%d : Booting...\n", mode);
-    setPattern(0, 0, 00, 0);  // クリア
 #ifdef ARDUINO_XIAO_ESP32C3
     xTaskCreateUniversal(rangingTask, "RangingTask", 2048, nullptr, 5, nullptr,
                          0);
 #endif
-    feedbackBegin();
   } else if (mode == BootMode::light) {
     light.begin();
   } else if (mode == BootMode::compass) {
@@ -248,14 +242,10 @@ MIN_ANGLE) + MIN_PERIOD;
 void loop() {
   if (mode == BootMode::sonar) {
     sonarMode();
-    delay(1);
+    delay(10);
   } else if (mode == BootMode::light) {
-    uint16_t delayTime = lightMode();
-    if (delayTime) {
-      vib.on(20);
-      delay(delayTime);
-    }
-  } else if (mode == BootMode::compass) {
-    // compassMode();
+    int delayTime = measureBrightness();
+    vib.on(10);
+    delay(delayTime);
   }
 }

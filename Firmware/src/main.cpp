@@ -106,7 +106,7 @@ uint16_t measureBrightness() {
 
   uint16_t lux = light.getLUX();
   float period = 0;  // 振動間隔、光量が少ないほど長くなる
-  int v = 0; // 振動間隔を整数にした値
+  int v = 0;         // 振動間隔を整数にした値
   if (lux) {
     period = LogMax - log2(lux);
     v = static_cast<uint16_t>(period * 40) + BaseV;
@@ -245,7 +245,9 @@ void loop() {
     delay(10);
   } else if (mode == BootMode::light) {
     int delayTime = measureBrightness();
-    vib.on(10);
-    delay(delayTime);
+    if (delayTime) {
+      vib.on(10);
+      delay(delayTime);
+    }
   }
 }

@@ -101,7 +101,7 @@ void sonarMode() {
 }
 
 uint16_t measureBrightness() {
-  constexpr float LogMax = 12.0;  // log2(4096) 最大の明るさ
+  constexpr float LogMax = 11.0;  // log2(4096) 最大の明るさ
   constexpr uint16_t BaseV = 20;  // 最小振動間隔
 
   uint16_t lux = light.getLUX();
@@ -109,9 +109,9 @@ uint16_t measureBrightness() {
   int v = 0;         // 振動間隔を整数にした値
   if (lux) {
     period = LogMax - log2(lux);
-    v = static_cast<uint16_t>(period * 40) + BaseV;
-  } else {
-    v = 0;
+    if (period >= 0) {
+      v = static_cast<uint16_t>(period * 40) + BaseV;
+    }
   }
   Serial.printf("LUX=%04d period=%d    \r", lux, v);
   return v;
@@ -147,7 +147,7 @@ void loop1() {
 
 void setup() {
   Serial.begin(115200);
-  delay(100);  // Waiting for DC converter
+  delay(100);  // Waiting for initializing serial port
   Jsb01.begin();
   btns[0].init(pin_button1);
   btns[1].init(pin_button2);
@@ -156,13 +156,12 @@ void setup() {
   setPattern(0, 0, 0, 0);  // クリア
   feedbackBegin();
   if (mode == BootMode::sonar) {
-    Serial.printf("%d : Booting...\n", mode);
 #ifdef ARDUINO_XIAO_ESP32C3
-    xTaskCreateUniversal(rangingTask, "RangingTask", 2048, nullptr, 5, nullptr,
-                         0);
+    xTaskCreateUniversal(rangingTask, "RangingTask", 2048, nullptr, 5, nullptr, 0);
 #endif
   } else if (mode == BootMode::light) {
     light.begin();
+    delay(1000);
   } else if (mode == BootMode::compass) {
     compass.begin();
   }

@@ -5,7 +5,9 @@
 #include "mydefs.h"
 
 #define LD14
-// #define VIBRATE_TEST // Vibrates twice per second for 20 ms
+//#define VIBRATE_TEST // Vibrates twice per second for 20 ms
+
+#define PIN_LBO D7 // JSB01 Rev.4 TPS61025 Low Battery Output(<1.1V)
 
 #if defined(ARDUINO_SEEED_XIAO_RP2040) || (ARDUINO_XIAO_ESP32C3)
 #define XIAO
@@ -156,6 +158,8 @@ void setup() {
 	pinMode(PIN_BUTTON2, INPUT_PULLUP);
 	pinMode(PIN_VIB, OUTPUT);
 
+	pinMode(D7, INPUT); // LBO
+
 	delay(500); // wait USB Serial
 
 	bool result;
@@ -179,8 +183,15 @@ void setup() {
 		sensor = Sensor::Distance;
 		if (result = initDistanceSensor()) {
 			flash();
+#ifdef PIN_LBO
+			if (digitalRead(PIN_LBO)) { // LBO active Low
+				delay(200);
+				flash();
+			}
+#else
 			delay(200);
 			flash();
+#endif
 		}
 	}
 	if (!result) {
@@ -197,6 +208,7 @@ void setup() {
 			delay(100);
 		}
 	}
+
     delay(500);
 }
 
@@ -378,7 +390,14 @@ int32_t loopDistanceSensor(unsigned long tick,  uint32_t& period) {
 	}
 
 #ifdef VIBRATE_TEST
-	period = 500 - 20;
+	period = 500;
+  #ifdef PIN_LBO
+	if (!digitalRead(PIN_LBO)) {
+		period = 1000;
+	}
+  #else
+  #endif
+  period -= 20;
 #else
 	if (distance <= 0 || distance >= maxRange * 1000) {
 		period = 0;

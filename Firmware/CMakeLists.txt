@@ -8,7 +8,7 @@ project(jsb01 C CXX ASM)
 pico_sdk_init()
 
 add_executable(jsb01 src/main.cpp)
-target_link_libraries(jsb01 pico_stdlib)
+target_link_libraries(jsb01 pico_stdlib hardware_pwm)
 pico_enable_stdio_usb(jsb01 1)
 pico_enable_stdio_uart(jsb01 0)
 

@@ -1,6 +1,6 @@
 # JSB01
 <p align="center">
-<img alt="JSB01" width="50%" src="./images/JSB01R4.jpg">
+<img alt="JSB01" width="50%" src="./images/JSB01R6.jpg">
 </p>
 
 視覚障害者の歩行支援デバイスです。距離センサー、地磁気センサー(コンパス)、照度センサーを備え、振動によって情報を伝えます。

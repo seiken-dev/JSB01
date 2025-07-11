@@ -1,5 +1,6 @@
 #include "Compass.h"
 
+#include "Preferences.h"
 #include "math.h"
 
 #define QMC5883_ADDRESS (0x0D)
@@ -13,6 +14,7 @@
 #define QMC5883_REG_OUT_Z (0x04)
 
 bool Compass::begin() {
+  Serial.println("Compass begin");
   if (!Jsb01.i2cExist(addr)) return false;
   Jsb01.i2cWriteRegByte(addr, QMC5883_REG_IDENT_B, 0X01);
   Jsb01.i2cWriteRegByte(addr, QMC5883_REG_IDENT_C, 0X40);

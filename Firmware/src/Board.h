@@ -1,5 +1,8 @@
-#pragma once
+#ifndef _BOARD_H_
+#define _BOARD_H_
+
 #include "Arduino.h"
+#include "Preferences.h"
 #include "Wire.h"
 
 constexpr uint8_t pin_sonar = D6;
@@ -21,3 +24,5 @@ class JSB01_CLASS {
 };
 
 extern JSB01_CLASS Jsb01;
+
+#endif

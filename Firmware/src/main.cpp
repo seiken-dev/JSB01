@@ -243,7 +243,7 @@ bool initDistanceSensor() {
 }
 
 bool initGeoMagSensor() {
-	Serial_print("GeoMag Sensor(QMC5883L)...");
+	Serial_print("GeoMag Sensor " COMPASS "...");
 	if (!compass.begin()) {
 		Serial_println(" not found");
 		return false;
@@ -422,7 +422,7 @@ int32_t loopGeoMagSensor(unsigned long tick, uint32_t& period) {
 	if (buttonLongPressed(PIN_BUTTON1, btn1Tick) && !calibrating) {
 		calibrating = true;
 		compass.startCalibration();
-		Serial_println("calibrate QMC5883L...");
+		Serial_println("calibrate " COMPASS "...");
 		flash(30);
 		calTick = millis();
 	}

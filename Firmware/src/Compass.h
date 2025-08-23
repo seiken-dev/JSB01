@@ -1,28 +1,68 @@
 #pragma once
 
-enum QMC5883_Samples {
-	QMC5883_SAMPLES_512 = 0b00,
-	QMC5883_SAMPLES_256 = 0b01,
-	QMC5883_SAMPLES_128 = 0b10,
-	QMC5883_SAMPLES_64 = 0b11
-};
+#define QMC5883P
+
+#define COMPASS "QMC5883P"
 
 enum QMC5883_DataRate {
-	QMC5883_DATARATE_10HZ = 0b00,
-	QMC5883_DATARATE_50HZ = 0b01,
-	QMC5883_DATARATE_100HZ = 0b10,
-	QMC5883_DATARATE_200HZ = 0b11,
+	QMC5883_DATARATE_10HZ	= 0,
+	QMC5883_DATARATE_50HZ	= 1,
+	QMC5883_DATARATE_100HZ	= 2,
+	QMC5883_DATARATE_200HZ	= 3,
+};
+
+#ifdef QMC5883P
+
+enum QMC5883_OverSampleRate {
+	QMC5883_OSR_8 = 0,
+	QMC5883_OSR_4 = 1,
+	QMC5883_OSR_2 = 2,
+	QMC5883_OSR_1 = 3
+};
+
+enum QMC5883_DownSampleRate {
+	QMC5883_DSR_1 = 0,
+	QMC5883_DSR_2 = 1,
+	QMC5883_DSR_4 = 2,
+	QMC5883_DSR_8 = 3
 };
 
 enum QMC5883_Range {
-	QMC5883_RANGE_2GA = 0b00,
-	QMC5883_RANGE_8GA = 0b01,
+	QMC5883_RANGE_30GA	= 0,
+	QMC5883_RANGE_12GA	= 1,
+	QMC5883_RANGE_8GA	= 2,
+	QMC5883_RANGE_2GA	= 3
 };
 
 enum QMC5883_Mode {
-	QMC5883_SINGLE = 0b00,
-	QMC5883_CONTINOUS = 0b01,
+	QMC5883_SUSPEND		= 0,
+	QMC5883_NORMAL		= 1,
+	QMC5883_SINGLE		= 2,
+	QMC5883_CONTINUOUS	= 3
 };
+
+#else // QMC5883L
+
+#define COMPASS "QMC5883L"
+
+enum QMC5883_OverSampleRate {
+	QMC5883_OSR_512	= 0,
+	QMC5883_OSR_256	= 1,
+	QMC5883_OSR_128	= 2,
+	QMC5883_OSR_64	= 3
+};
+
+enum QMC5883_Range {
+	QMC5883_RANGE_2GA = 0,
+	QMC5883_RANGE_8GA = 1
+};
+
+enum QMC5883_Mode {
+	QMC5883_STANBY		= 0,
+	QMC5883_CONTINUOUS	= 1
+};
+
+#endif
 
 class Compass {
 public:
@@ -49,7 +89,10 @@ public:
 	void setMeasurementMode(QMC5883_Mode mode);
 	void setDataRate(QMC5883_DataRate dataRate);
 	void setRange(QMC5883_Range range);
-	void setSamples(QMC5883_Samples samples);
+	void setOverSampleRate(QMC5883_OverSampleRate osr);
+#ifdef QMC5883P
+	void setDownSampleRate(QMC5883_DownSampleRate dsr);
+#endif
 
 private:
 	uint8_t readRegByte(uint8_t reg);

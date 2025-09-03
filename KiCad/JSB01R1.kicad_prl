@@ -34,7 +34,6 @@
       3,
       4,
       5,
-      7,
       8,
       9,
       10,
@@ -69,7 +68,7 @@
     "zone_display_mode": 0
   },
   "meta": {
-    "filename": "JSB01.kicad_prl",
+    "filename": "JSB01R1.kicad_prl",
     "version": 3
   },
   "project": {

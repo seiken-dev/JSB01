@@ -46,12 +46,12 @@ BootMode selectBootMode() {
     cmd = commandDispatch();
     if (cmd) break;
   }
-  if (cmd == 3) {
+  if (cmd == 4) {
     let = BootMode::light;
     vib.on(200);
     delay(300);
     vib.on(200);
-  } else if (cmd == 4) {
+  } else if (cmd == 3) {
     let = BootMode::compass;
     vib.on(200);
     delay(300);
@@ -133,6 +133,8 @@ void setup1() {
   }
   if (mode == BootMode::sonar) {
     mb.begin(pin_sonar, true);
+  } else if (mode == BootMode::compass) {
+    compass.begin();
   }
   return;
 }

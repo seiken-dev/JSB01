@@ -2,8 +2,6 @@
 #include <Arduino.h>
 #define QMC5883P
 
-#define COMPASS "QMC5883P"
-
 enum QMC5883_DataRate {
   QMC5883_DATARATE_10HZ = 0,
   QMC5883_DATARATE_50HZ = 1,
@@ -12,7 +10,6 @@ enum QMC5883_DataRate {
 };
 
 #ifdef QMC5883P
-
 enum QMC5883_OverSampleRate {
   QMC5883_OSR_8 = 0,
   QMC5883_OSR_4 = 1,
@@ -42,7 +39,6 @@ enum QMC5883_Mode {
 };
 
 #else  // QMC5883L
-
 #define COMPASS "QMC5883L"
 
 enum QMC5883_OverSampleRate {

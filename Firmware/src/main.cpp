@@ -120,7 +120,7 @@ uint16_t measureBrightness() {
 BootMode mode = BootMode::none;
 
 #ifdef ARDUINO_XIAO_ESP32C3
-void rangingTask(void *param) {
+void rangingTask(void* param) {
   while (1) {
     mb.ranging();
     delay(1);
@@ -138,10 +138,13 @@ void setup1() {
   }
   return;
 }
-
+int32_t compassDegree = 0;
 void loop1() {
   if (mode == BootMode::sonar) {
     mb.ranging();
+  } else if (mode == BootMode::compass) {
+    compass.read();
+    compassDegree = compass.getDegree();
   }
   delay(1);  // いらないかも？
 }
@@ -251,5 +254,14 @@ void loop() {
       vib.on(10);
       delay(delayTime);
     }
+  } else if (mode == BootMode::compass) {
+    int period = compassDegree;
+    if (period > 180) {
+      period = 360 - period;
+    }
+    period += 5;
+    Serial.printf("Compass Degree=%d    \r", period);
+    vib.on(10);
+    delay(40 + period);
   }
 }

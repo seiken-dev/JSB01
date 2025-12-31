@@ -1,5 +1,6 @@
-#include <Arduino.h>
 #include "Vibrator.h"
+
+#include <Arduino.h>
 
 #ifdef ARDUINO_RASPBERRY_PI_PICO
 #include "hardware/pwm.h"
@@ -9,10 +10,9 @@ constexpr uint8_t pwmCH = 0;
 constexpr uint32_t pwmFreq = 130;
 constexpr uint8_t pwmResolution = 13;
 #ifdef ARDUINO_XIAO_ESP32C3
-hw_timer_t *vibClock = nullptr;
+hw_timer_t* vibClock = nullptr;
 #endif
-bool Vibrator::begin(uint8_t pin, bool init, bool ledc)
-{
+bool Vibrator::begin(uint8_t pin, bool init, bool ledc) {
   if (init) {
     pinMode(pin, OUTPUT);
   }
@@ -20,7 +20,7 @@ bool Vibrator::begin(uint8_t pin, bool init, bool ledc)
   if (init && ledc) {
 #ifdef ARDUINO_XIAO_ESP32C3
     vibClock = timerBegin(0, 80, true);
-    
+
     timerAttachInterrupt(vibClock, off, true);
     ledcSetup(pwmCH, pwmFreq, pwmResolution);
     ledcAttachPin(_pin, pwmCH);
@@ -44,7 +44,7 @@ void IRAM_ATTR Vibrator::on() {
 void IRAM_ATTR Vibrator::on(uint16_t ms) {
   timerWrite(vibClock, 0);
   on();
-  timerAlarmWrite(vibClock, ms*1000, false);
+  timerAlarmWrite(vibClock, ms * 1000, false);
   timerAlarmEnable(vibClock);
 }
 
@@ -56,8 +56,7 @@ void IRAM_ATTR Vibrator::off() {
   }
 }
 
-void Vibrator::setFrequency(unsigned int f)
-{
+void Vibrator::setFrequency(unsigned int f) {
   if (_ledc) ledcChangeFrequency(pwmCH, f, pwmResolution);
   _freq = f;
 }
@@ -70,8 +69,7 @@ void Vibrator::on() {
   }
   _on = true;
 }
-void Vibrator::on(uint16_t ms)
-{
+void Vibrator::on(uint16_t ms) {
   if (_ledc) {
     tone(_pin, _freq, ms);
   } else {
@@ -88,15 +86,13 @@ void Vibrator::off() {
   }
   _on = false;
 }
-void Vibrator::setFrequency(unsigned int f)
-{
+void Vibrator::setFrequency(unsigned int f) {
   if (_ledc) {
     _freq = f;
   }
 }
 
-int64_t Vibrator::vibOffCB(alarm_id_t id, void *user_data)
-{
+int64_t Vibrator::vibOffCB(alarm_id_t id, void* user_data) {
   off();
   return 0;
 }

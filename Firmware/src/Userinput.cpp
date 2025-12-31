@@ -1,5 +1,6 @@
-#include "Arduino.h"
 #include "Userinput.h"
+
+#include "Arduino.h"
 
 bool TactSw::init(uint8_t pin) {
   _pin = pin;
@@ -23,20 +24,17 @@ TactSw::status_t TactSw::check() {
       _prev = true;
       _start = millis();
       ret = press;
+    } else {
+      if (millis() - _start > longThreshold && !_processed) {
+        _processed = true;
+        ret = longpressed;
+      } else if (millis() - _start > threshold)
+        ret = pressing;
     }
-    else {
-      if (millis()-_start > longThreshold && !_processed) {
-	_processed = true;
-	ret =  longpressed;
-      }
-      else if (millis()-_start > threshold)
-	ret = pressing;
-    }
-  }
-  else if (status == HIGH) {
+  } else if (status == HIGH) {
     if (_prev) {
-      if (millis()-_start > threshold && millis()-_start < longThreshold) {
-	ret = pressed;
+      if (millis() - _start > threshold && millis() - _start < longThreshold) {
+        ret = pressed;
       }
       _start = 0;
       _prev = false;

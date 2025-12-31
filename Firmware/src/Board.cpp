@@ -24,7 +24,7 @@ void JSB01_CLASS::i2cWriteByte(uint8_t addr, byte data) {
   Serial.printf("Writing 0x%04x\n", data);
 }
 
-void JSB01_CLASS::i2cWriteBytes(uint8_t addr, const uint8_t *buffer,
+void JSB01_CLASS::i2cWriteBytes(uint8_t addr, const uint8_t* buffer,
                                 size_t size) {
   Wire.beginTransmission(addr);
   Wire.write(buffer, size);
@@ -39,7 +39,7 @@ uint8_t JSB01_CLASS::i2cReadByte(const uint8_t addr) {
   return ret;
 }
 
-uint8_t JSB01_CLASS::i2cReadBytes(const uint8_t addr, uint8_t *buffer,
+uint8_t JSB01_CLASS::i2cReadBytes(const uint8_t addr, uint8_t* buffer,
                                   size_t size) {
   Wire.requestFrom(addr, size);
   while (!Wire.available()) {

@@ -15,9 +15,9 @@ class JSB01_CLASS {
   bool begin();
   bool i2cExist(uint8_t addr);
   void i2cWriteByte(uint8_t addr, byte data);
-  void i2cWriteBytes(uint8_t addr, const uint8_t *buffer, size_t size);
+  void i2cWriteBytes(uint8_t addr, const uint8_t* buffer, size_t size);
   uint8_t i2cReadByte(const uint8_t addr);
-  uint8_t i2cReadBytes(const uint8_t addr, uint8_t *buffer, size_t size);
+  uint8_t i2cReadBytes(const uint8_t addr, uint8_t* buffer, size_t size);
   void i2cWriteRegByte(uint8_t addr, uint8_t reg, uint8_t value);
   uint8_t i2cReadRegByte(uint8_t addr, uint8_t reg);
   uint16_t i2cReadRegWord(uint8_t addr, uint8_t reg);

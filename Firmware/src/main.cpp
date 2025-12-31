@@ -120,7 +120,7 @@ uint16_t measureBrightness() {
 BootMode mode = BootMode::none;
 
 #ifdef ARDUINO_XIAO_ESP32C3
-void rangingTask(void *param) {
+void rangingTask(void* param) {
   while (1) {
     mb.ranging();
     delay(1);

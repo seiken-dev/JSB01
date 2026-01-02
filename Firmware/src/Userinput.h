@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Arduino.h"
 constexpr uint16_t threshold = 50;
 constexpr uint16_t longThreshold = 800;
 

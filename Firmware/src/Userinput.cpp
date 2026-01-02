@@ -1,7 +1,5 @@
 #include "Userinput.h"
 
-#include "Arduino.h"
-
 bool TactSw::init(uint8_t pin) {
   _pin = pin;
   pinMode(_pin, INPUT_PULLUP);
@@ -11,6 +9,10 @@ bool TactSw::init(uint8_t pin) {
   return true;
 }
 
+/**
+ * @brief スイッチの状態を取得する
+ * @return status_t
+ */
 TactSw::status_t TactSw::check() {
   TactSw::status_t ret = none;
 #if defined ARDUINO_SEEED_XIAO_RP2040 || ARDUINO_RASPBERRY_PI_PICO

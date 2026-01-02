@@ -2,16 +2,21 @@
 
 #include <Arduino.h>
 
-#ifdef ARDUINO_RASPBERRY_PI_PICO
-#include "hardware/pwm.h"
-#endif
 
-constexpr uint8_t pwmCH = 0;
 constexpr uint32_t pwmFreq = 130;
-constexpr uint8_t pwmResolution = 13;
 #ifdef ARDUINO_XIAO_ESP32C3
+constexpr uint8_t pwmResolution = 13;
+constexpr uint8_t pwmCH = 0;
 hw_timer_t* vibClock = nullptr;
 #endif
+
+/**
+ * @brief 初期化
+ * @param pin 使用するピン番号
+ * @param init ピンモードをOUTPUTに設定するかどうか
+ * @param ledc LEDC（PWM）を使用するかどうか
+ * @return 成功したらtrueを返す
+ */
 bool Vibrator::begin(uint8_t pin, bool init, bool ledc) {
   if (init) {
     pinMode(pin, OUTPUT);

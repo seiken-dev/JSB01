@@ -10,11 +10,12 @@
 #include "Userinput.h"
 #include "Vibrator.h"
 
-MB10xx mb;
-TactSw btns[2];
-BH1750FVI light;
-Compass compass;
+MB10xx mb; // 超音波センサ
+TactSw btns[2]; // タクトスイッチ
+BH1750FVI light; // 照度センサ
+Compass compass; // コンパスセンサ
 
+// 超音波センサーの最大検出距離 (単位: 50cm)
 constexpr int MaxDetectUnit = 10;
 
 int commandDispatch() {
@@ -27,6 +28,8 @@ int commandDispatch() {
   } else if (btn1 == TactSw::longpressed && btn2 == TactSw::pressing) {
     return 5;
   } else if (btn1 == TactSw::pressing && btn2 == TactSw::longpressed) {
+    return 5;
+  } else if (btn1 == TactSw::longpressed && btn2 == TactSw::longpressed) {
     return 5;
   } else if (btn1 == TactSw::pressed && btn2 == TactSw::none) {
     return 1;
@@ -83,7 +86,7 @@ void sonarMode() {
     } else if (cmd == 5) {
       maxRange = 4;
       vib.on(200);
-      delay(250);
+      delay(500);
     }
   }
 

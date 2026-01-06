@@ -73,9 +73,16 @@ def flash_firmware(uf2_path, mount_point):
         return True
     except Exception as e:
         # 書き込み直後に再起動して切断されるため、エラーが出ても成功していることが多い
-        if not dest_path.exists():
-            print("\n[OK] Flash finished (device disconnected as expected).")
+        # ドライブ自体が消えているかを確認する
+        try:
+            if not mount_point.exists():
+                print("\n[OK] Flash finished (device rebooted and disconnected).")
+                return True
+        except OSError:
+            # Windows等でデバイス消失後にアクセスするとOSErrorになる場合があるため成功とみなす
+            print("\n[OK] Flash finished (device disconnected).")
             return True
+
         print(f"\n[!] Error during copy: {e}")
         return False
 

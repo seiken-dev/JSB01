@@ -1,0 +1,17 @@
+(footprint "Pad0.6_0.35" (version 20221018) (generator pcbnew)
+  (layer "F.Cu")
+  (attr through_hole board_only exclude_from_pos_files exclude_from_bom)
+  (fp_text reference "Pad" (at 0 -0.5 unlocked) (layer "F.SilkS") hide
+      (effects (font (size 1 1) (thickness 0.1)))
+    (tstamp 83ae3b7e-28c9-433f-a08c-98e75115e74d)
+  )
+  (fp_text value "Pad0.6_0.35" (at 0 1 unlocked) (layer "F.Fab") hide
+      (effects (font (size 1 1) (thickness 0.15)))
+    (tstamp 52a9733e-9a9d-4491-9083-bc51e2095f54)
+  )
+  (fp_text user "${REFERENCE}" (at 0 2.5 unlocked) (layer "F.Fab") hide
+      (effects (font (size 1 1) (thickness 0.15)))
+    (tstamp 847dcf96-26be-4a0c-8c13-3aac924c35dd)
+  )
+  (pad "" thru_hole circle (at 0 0) (size 0.6 0.6) (drill 0.35) (layers "*.Cu" "*.Mask") (tstamp 0855f616-cf30-4adf-86eb-742a09f0e256))
+)

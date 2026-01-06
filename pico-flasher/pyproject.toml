@@ -1,0 +1,22 @@
+[project]
+name = "pico-flasher"
+version = "0.1.0"
+description = "JSB01 Firmware flasher"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "psutil>=7.2.1",
+    "pyserial>=3.5",
+]
+
+[project.scripts]
+jsb-flash = "jsb_flasher:main"
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.17.0",
+    "taskipy>=1.2.1",
+]
+
+[tool.taskipy.tasks]
+build = "pyinstaller jsb-flash.spec --clean"

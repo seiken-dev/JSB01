@@ -12,7 +12,8 @@ import psutil
 PICO_VID = 0x2E8A
 PICO_PID = 0x0005  # MicroPython/CircuitPython実行時
 BOOTSEL_LABEL = "RPI-RP2"
-EXPECTED_HASH = "18ec42850c70eb06ca928e81704b967cb20eff54aec6b0293453fbca3ab270ca" 
+EXPECTED_HASH = "45dda35abb9af37ac8a6531fe67b2391f7413ce485b9bb82eda4f4b4778b345c"
+
 HASH_ALGORITHM = "sha256" # "sha512" に変更も可能
 
 def calculate_file_hash(file_path: str | Path) -> str:

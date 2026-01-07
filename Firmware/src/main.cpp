@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <math.h>
 
 #include "BH1750FVI.h"
 #include "Board.h"
@@ -10,10 +9,10 @@
 #include "Userinput.h"
 #include "Vibrator.h"
 
-MB10xx mb; // 超音波センサ
-TactSw btns[2]; // タクトスイッチ
-BH1750FVI light; // 照度センサ
-Compass compass; // コンパスセンサ
+MB10xx mb;        // 超音波センサ
+TactSw btns[2];   // タクトスイッチ
+BH1750FVI light;  // 照度センサ
+Compass compass;  // コンパスセンサ
 
 // 超音波センサーの最大検出距離 (単位: 50cm)
 constexpr int MaxDetectUnit = 10;
@@ -144,7 +143,6 @@ void loop1() {
   if (mode == BootMode::sonar) {
     mb.ranging();
   }
-  delay(1);  // いらないかも？
 }
 #endif
 
@@ -157,100 +155,82 @@ void setup() {
   btns[1].init(pin_button2);
   vib.begin(pin_vibe, true, true);
   mode = selectBootMode();
-  setPattern(0, 0, 0, 0);  // クリア
+  setPattern(0, 0, 0, 0);  // 振動パターンをクリア
   feedbackBegin();
   if (mode == BootMode::sonar) {
 #ifdef ARDUINO_XIAO_ESP32C3
     xTaskCreateUniversal(rangingTask, "RangingTask", 2048, nullptr, 5, nullptr,
                          0);
 #endif
+    // 初期化はsetup1で行う
   } else if (mode == BootMode::light) {
     light.begin();
-    delay(1000);
   } else if (mode == BootMode::compass) {
     compass.begin();
   }
 }
 
-/*
-void compassMode() {
-  constexpr int16_t MAX_ANGLE = 150;
-  constexpr int16_t MIN_ANGLE = 10;
-  constexpr int16_t MAX_PERIOD = 500;
+/**
+ * @brief 角度を振動パターンに変換
+ * @param heading 角度(0〜360)
+ * @return 振動継続時間
+ * @note ８方位を振動継続で知らせる。北（0D ±22.5d） が最も長く、南（180d ±22.5d）が最も短い。西と東は中間の長さ。５段階の数値を返す。
+ */
+int headingToVibration(float heading) {
+  if (heading < 0) heading += 360;
+  if (heading >= 360) heading -= 360;
 
-  static bool calibrating = false;
-  static unsigned long calTick;
-  constexpr uint32_t MIN_CALIBRATE_TIME = 1000;
-  if (buttonLongPressed(PIN_BUTTON1, btn1Tick) && !calibrating) {
-    calibrating = true;
-    compass.startCalibration();
-    Serial.println("calibrate QMC5883L...");
-    calTick = millis();
-  }
-  if (!buttonPressing(PIN_BUTTON1) && calibrating) {
-    calibrating = false;
-    compass.endCalibration();
-    if (millis() - calTick >= MIN_CALIBRATE_TIME) {
-      Serial.printf("offsetX=%d offsetY=%d\n", compass.getOffsetX(),
-                    compass.getOffsetY());
-    } else {  // reset offset
-      Serial.println("reset offset");
-      compass.setOffset();
-    }
-    prefs.putInt(PREFS_OFFSET_X, compass.getOffsetX());
-    prefs.putInt(PREFS_OFFSET_Y, compass.getOffsetY());
-    prefs.putInt(PREFS_OFFSET_Z, compass.getOffsetZ());
-    prefs.flush();
-  }
-  if (calibrating) {
-    compass.calibrate();
-    period = 0;
-    return 0;
-  }
+  // 0:N, 1:NE, 2:E, 3:SE, 4:S, 5:SW, 6:W, 7:NW
+  int sector = static_cast<int>((heading + 22.5) / 45.0) % 8;
 
-  compass.read();
+  // 北(0)からの距離(0~4)
+  int diff = (sector > 4) ? (8 - sector) : sector;
 
-  if (buttonLongPressed(PIN_BUTTON2, btn2Tick) && !calibrating) {
-    int32_t degree = compass.getDegree(true);
-    if (degree >= 180) {
-      degree = degree - 360;
-    }
-    compass.setDeclinationAngle(-degree);
-    flash(30);
-    delay(200);
-    flash(30);
-    delay(500);
-  }
-
-  int32_t value = compass.getDegree();
-  Serial_printf("X=%d Y=%d Z=%d\n", compass.getX(), compass.getY(),
-                compass.getZ());
-  int32_t degree = value;
-  if (degree > 180) {
-    degree = 360 - degree;
-  }
-  if (degree >= MAX_ANGLE) {
-    period = 0;
-  } else if (degree <= MIN_ANGLE) {
-    period = MIN_PERIOD;
-  } else {
-    period = (MAX_PERIOD - MIN_PERIOD) * (degree - MIN_ANGLE) /
-                 (MAX_ANGLE - MIN_ANGLE) +
-             MIN_PERIOD;
-  }
-  return value;
+  // 北(0)が最も長く(500ms)、南(4)が最も短い(100ms)
+  Serial.printf("%03d\r", (500 - diff * 100));
+  return 500 - diff * 100;
 }
-*/
+
+void compassMode() {
+  float heading = compass.getHeading();
+  if (heading >= 0) {
+    int duration = headingToVibration(heading);
+    vib.on(duration);
+    delay(500);  // 1000ms周期で振動
+  } else {
+    Serial.println("Failed to read heading.");
+  }
+  uint8_t cmd = commandDispatch();
+  // 両方のスイッチが長押しされたらキャリブレーションを実行
+  if (cmd == 5) {
+    vib.on(200);
+    delay(400);
+    vib.on(200);
+    delay(400);
+    vib.on(200);
+    delay(400);
+    compass.calibrate();
+    vib.on(200);
+    delay(400);
+    vib.on(200);
+    delay(400);
+    vib.on(200);
+    delay(400);
+  }
+}
 
 void loop() {
   if (mode == BootMode::sonar) {
     sonarMode();
-    delay(10);
+    delay(10);  // スイッチの検出間隔、チャタリング防止
   } else if (mode == BootMode::light) {
     int delayTime = measureBrightness();
     if (delayTime) {
       vib.on(10);
       delay(delayTime);
     }
+  } else if (mode == BootMode::compass) {
+    compassMode();
+    delay(20);
   }
 }

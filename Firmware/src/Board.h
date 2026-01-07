@@ -2,7 +2,6 @@
 #define _BOARD_H_
 
 #include "Arduino.h"
-#include "Preferences.h"
 #include "Wire.h"
 
 constexpr uint8_t pin_sonar = D6;

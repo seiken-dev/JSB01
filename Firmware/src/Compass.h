@@ -1,63 +1,35 @@
-#pragma once
-#include "Arduino.h"
-#include "Board.h"
+#ifndef COMPASS_H
+#define COMPASS_H
 
-enum QMC5883_Samples {
-  QMC5883_SAMPLES_512 = 0b00,
-  QMC5883_SAMPLES_256 = 0b01,
-  QMC5883_SAMPLES_128 = 0b10,
-  QMC5883_SAMPLES_64 = 0b11
-};
-
-enum QMC5883_DataRate {
-  QMC5883_DATARATE_10HZ = 0b00,
-  QMC5883_DATARATE_50HZ = 0b01,
-  QMC5883_DATARATE_100HZ = 0b10,
-  QMC5883_DATARATE_200HZ = 0b11,
-};
-
-enum QMC5883_Range {
-  QMC5883_RANGE_2GA = 0b00,
-  QMC5883_RANGE_8GA = 0b01,
-};
-
-enum QMC5883_Mode {
-  QMC5883_SINGLE = 0b00,
-  QMC5883_CONTINOUS = 0b01,
-};
+#include <Arduino.h>
+#include <Adafruit_QMC5883P.h>
+#include <EEPROM.h>
 
 class Compass {
- public:
-  bool begin();
-  void read();
-  int16_t getX() { return rawX - offsetX; }
-  int16_t getY() { return rawY - offsetY; }
-  int16_t getZ() { return rawZ - offsetZ; }
-  int16_t getDegree(bool isRaw = false);
-  void startCalibration();
-  void calibrate();
-  void endCalibration();
-  int16_t getOffsetX() { return offsetX; }
-  int16_t getOffsetY() { return offsetY; }
-  int16_t getOffsetZ() { return offsetZ; }
-  void setOffset(int16_t _offsetX = 0, int16_t _offsetY = 0,
-                 int16_t _offsetZ = 0);
-  void setDeclinationAngle(float degree) { declinationAngle = degree; }
-  float getDeclinationAngle() { return declinationAngle; }
-  void setDeviceAngle(int16_t degree) { deviceAngle = degree; }
-  int16_t getDeviceAngle() { return deviceAngle; }
+public:
+    Compass();
+    bool begin();
+    float getHeading();
+    void calibrate();
 
-  void setMeasurementMode(QMC5883_Mode mode);
-  void setDataRate(QMC5883_DataRate dataRate);
-  void setRange(QMC5883_Range range);
-  void setSamples(QMC5883_Samples samples);
+private:
+    Adafruit_QMC5883P qmc;
+    int16_t x_offset;
+    int16_t y_offset;
+    int16_t z_offset;
 
- private:
-  uint8_t addr = 0x0D;
-  int16_t rawX, rawY, rawZ;
-  int16_t minX, minY, minZ;
-  int16_t maxX, maxY, maxZ;
-  int16_t offsetX = 0, offsetY = 0, offsetZ = 0;
-  float declinationAngle = 0.0f;
-  int16_t deviceAngle = 0;
+    struct CalibrationData {
+        uint32_t signature;
+        int16_t x_off;
+        int16_t y_off;
+        int16_t z_off;
+    };
+
+    static const uint32_t EEPROM_SIGNATURE = 0xAB12CD34;
+    static const int EEPROM_ADDR = 0;
+
+    bool loadCalibration();
+    void saveCalibration();
 };
+
+#endif

@@ -14,9 +14,12 @@ jsb-flash = "jsb_flasher:main"
 
 [dependency-groups]
 dev = [
-    "pyinstaller>=6.17.0",
+    "pyinstaller",
     "taskipy>=1.2.1",
 ]
 
 [tool.taskipy.tasks]
 build = "pyinstaller jsb-flash.spec --distpath jsb01-firmware --clean"
+
+[tool.uv.sources]
+pyinstaller = { git = "https://github.com/pyinstaller/pyinstaller.git", rev = "v6.17.0" }

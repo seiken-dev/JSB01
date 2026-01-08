@@ -18,8 +18,12 @@ USBシリアル接続されたPicoを自動的に検出し、BOOTSELモードへ
 
 ```bash
 # 依存関係のインストール
-uv sync
+export PYINSTALLER_COMPILE_BOOTLOADER="YES"
+uv sync --no-cache
 ```
+
+PyInstallerでビルドされた実行ファイルは、稀にWindowsのウィルススキャンにご検知されることがあります。これを回避するには、このプロジェクトをビルドするマシンでPyInstaller のブートローダをセルフビルドし、それを使ってflasherの実行ファイルを作成する必要があります。
+PYINSTALLER_COMPILE_BOOTLOADERという環境変数がセットされている場合、PyInstallerはブートローダを強制的にビルドします。これにより、ウィルススキャンにご検知されなくなるはずです。
 
 ## 使い方
 
@@ -43,7 +47,7 @@ uv run pico-flash path/to/firmware.uf2
 uv run task build
 ```
 
-`dist/pico-flash.exe` が生成されます。
+`jsb01-firmware/ｊｓｂ-flash.exe` が生成されます。
 この `exe` ファイルと `firmware.uf2` を同じフォルダに置き、`exe` を実行するだけで書き込みが完了します。
 
 ## 仕組み

@@ -1,0 +1,10 @@
+version: '3'
+
+vars:
+  VERSION: "v0.0.1"
+
+tasks:
+  build:
+    desc: Build the flasher executable
+    cmds:
+      - go build -ldflags="-s -w" -o jsb01-firmware/jsb01-flasher-{{.VERSION}}.exe

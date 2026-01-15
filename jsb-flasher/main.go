@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -23,10 +24,20 @@ const (
 )
 
 func main() {
+	portFlag := flag.String("p", "", "Serial port name")
+	flag.Parse()
+
+	args := flag.Args()
+	if len(args) > 1 {
+		fmt.Println("Error: Too many arguments.")
+		fmt.Printf("Usage: %s [-p PORT] [firmware.uf2]\n", filepath.Base(os.Args[0]))
+		os.Exit(1)
+	}
+
 	var uf2Path string
 
-	if len(os.Args) > 1 {
-		uf2Path = os.Args[1]
+	if len(args) == 1 {
+		uf2Path = args[0]
 	} else {
 		// Try to find firmware.uf2 in the executable directory
 		ex, err := os.Executable()
@@ -44,7 +55,7 @@ func main() {
 	}
 
 	// --- 0. Hash Check (Only if file was automatically selected) ---
-	if len(os.Args) <= 1 {
+	if len(args) == 0 {
 		fmt.Println("[*] Verifying firmware integrity (sha256)...")
 		currentHash, err := calculateFileHash(uf2Path)
 		if err != nil {
@@ -63,7 +74,13 @@ func main() {
 	}
 
 	// 1. Find Serial Port
-	portName := findPicoSerial()
+	var portName string
+	if *portFlag != "" {
+		portName = *portFlag
+	} else {
+		portName = findPicoSerial()
+	}
+
 	if portName != "" {
 		// 2. Enter BOOTSEL mode
 		enterBootselMode(portName)
@@ -103,13 +120,25 @@ func findPicoSerial() string {
 		return ""
 	}
 
+	var foundPorts []string
 	for _, port := range ports {
 		// Check both VID formats just in case (upper/lower)
 		if strings.EqualFold(port.VID, PicoVID) {
-			return port.Name
+			foundPorts = append(foundPorts, port.Name)
 		}
 	}
-	return ""
+
+	if len(foundPorts) == 0 {
+		return ""
+	}
+
+	if len(foundPorts) > 1 {
+		fmt.Printf("[!] Error: Multiple RP2040 devices detected (%s).\n", strings.Join(foundPorts, ", "))
+		fmt.Println("    Please connect only one device to ensure the correct one is flashed.")
+		os.Exit(1)
+	}
+
+	return foundPorts[0]
 }
 
 func enterBootselMode(portName string) {
@@ -138,7 +167,7 @@ func findPicoDrive(timeout time.Duration) string {
 		// Check drives D...Z
 		for _, drive := range "DEFGHIJKLMNOPQRSTUVWXYZ" {
 			driveRoot := string(drive) + ":\\"
-			
+
 			// Check volume label
 			label, err := getVolumeLabel(driveRoot)
 			if err == nil && label == BootselLabel {
@@ -193,7 +222,7 @@ func flashFirmware(uf2Path, mountPoint string) {
 		fmt.Println("\n[OK] Flash finished (device rebooted and disconnected).")
 		return
 	}
-	
+
 	// Also check checking volume label again might fail if device is gone
 	if _, err := getVolumeLabel(mountPoint); err != nil {
 		fmt.Println("\n[OK] Flash finished (device disconnected).")

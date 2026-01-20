@@ -8,6 +8,7 @@ bool Compass::begin() {
   if (!qmc.begin()) {
     return false;
   }
+  Wire.setClock(100000); // Set I2C frequency to 100kHz
 
   qmc.setRange(QMC5883P_RANGE_8G);
   qmc.setMode(QMC5883P_MODE_CONTINUOUS);

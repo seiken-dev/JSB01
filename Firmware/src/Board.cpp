@@ -4,7 +4,7 @@ JSB01_CLASS Jsb01;
 
 bool JSB01_CLASS::begin() {
   Wire.begin();
-  Wire.setClock(400000);  // use 400 kHz I2C
+  Wire.setClock(100000);  // use 100 kHz I2C
   return true;
 }
 

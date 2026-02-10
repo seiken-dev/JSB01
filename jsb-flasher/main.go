@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lxn/walk"
+	. "github.com/lxn/walk/declarative"
 	"go.bug.st/serial"
 	"go.bug.st/serial/enumerator"
 	"golang.org/x/sys/windows"
@@ -25,79 +27,158 @@ const (
 
 func main() {
 	portFlag := flag.String("p", "", "Serial port name")
+	consoleFlag := flag.Bool("c", false, "Launch console")
+	ignoreHashFlag := flag.Bool("i", false, "Ignore firmware hash check (not recommended)")
 	flag.Parse()
-
-	args := flag.Args()
-	if len(args) > 1 {
-		fmt.Println("Error: Too many arguments.")
-		fmt.Printf("Usage: %s [-p PORT] [firmware.uf2]\n", filepath.Base(os.Args[0]))
-		os.Exit(1)
+	firmware := ""
+	if len(flag.Args()) == 1 {
+		firmware = flag.Args()[0]
 	}
 
-	var uf2Path string
-
-	if len(args) == 1 {
-		uf2Path = args[0]
+	if *consoleFlag {
+		err := consoleApp(firmware, *portFlag, *ignoreHashFlag)
+		if err != nil {
+			os.Exit(1)
+		}
+		fmt.Printf("Firmware flashing Done.\n")
 	} else {
-		// Try to find firmware.uf2 in the executable directory
-		ex, err := os.Executable()
-		if err != nil {
-			panic(err)
+		guiApp(firmware, *portFlag, *ignoreHashFlag)
+	}
+}
+
+func guiApp(firmwarePath string, portName string, ignoreHash bool) error {
+	var mainWindow *walk.MainWindow
+	var portListBox *walk.ListBox
+	var selectedPort string
+
+	// Get available ports
+	availablePorts := []string{}
+	if portName != "" {
+		availablePorts = append(availablePorts, portName)
+		selectedPort = portName
+	} else {
+		availablePorts = findPicoSerial()
+		if len(availablePorts) > 0 {
+			selectedPort = availablePorts[0]
 		}
-		baseDir := filepath.Dir(ex)
-		uf2Path = filepath.Join(baseDir, "firmware.uf2")
-		fmt.Printf("[*] Looking for firmware at: %s\n", uf2Path)
 	}
 
-	if _, err := os.Stat(uf2Path); os.IsNotExist(err) {
-		fmt.Printf("Error: File not found: %s\n", uf2Path)
-		os.Exit(1)
+	// If no ports available, show error dialog
+	if len(availablePorts) == 0 {
+		walk.MsgBox(nil, "Error", "No JSB01 serial ports found", walk.MsgBoxIconError)
+		return fmt.Errorf("no available ports")
 	}
 
-	// --- 0. Hash Check (Only if file was automatically selected) ---
-	if len(args) == 0 {
-		fmt.Println("[*] Verifying firmware integrity (sha256)...")
-		currentHash, err := calculateFileHash(uf2Path)
-		if err != nil {
-			fmt.Printf("Error calculating hash: %v\n", err)
-			os.Exit(1)
-		}
+	MainWindow{
+		AssignTo: &mainWindow,
+		Title:    "JSB01 Firmware Flasher",
+		Layout:   VBox{},
+		Children: []Widget{
+			Label{
+				Text: "Select Serial Port:",
+			},
+			ListBox{
+				AssignTo:     &portListBox,
+				Model:        availablePorts,
+				CurrentIndex: 0,
+				OnCurrentIndexChanged: func() {
+					if portListBox.CurrentIndex() >= 0 && portListBox.CurrentIndex() < len(availablePorts) {
+						selectedPort = availablePorts[portListBox.CurrentIndex()]
+					}
+				},
+			},
+			Composite{
+				Layout: HBox{},
+				Children: []Widget{
+					PushButton{
+						Text: "OK",
+						OnClicked: func() {
+							// Execute flashing process with selectedPort
+							uf2Path, err := resolveAndValidateUF2Path(firmwarePath, ignoreHash)
+							if err != nil {
+								walk.MsgBox(mainWindow, "Error", fmt.Sprintf("Error: %v", err), walk.MsgBoxIconError)
+								return
+							}
+							// Enter BOOTSEL mode
+							enterBootselMode(selectedPort)
+							// Wait for Drive
+							mountPoint := findPicoDrive(10 * time.Second)
+							if mountPoint == "" {
+								walk.MsgBox(mainWindow, "Error", "Failed to find Pico drive in BOOTSEL mode", walk.MsgBoxIconError)
+								return
+							}
+							// Flash firmware
+							err = flashFirmware(uf2Path, mountPoint)
+							if err != nil {
+								walk.MsgBox(mainWindow, "Error", fmt.Sprintf("Error: %v", err), walk.MsgBoxIconError)
+								return
+							}
+							walk.MsgBox(mainWindow, "Success", "Firmware flashing completed!", walk.MsgBoxIconInformation)
+							mainWindow.Close()
+						},
+					},
+					PushButton{
+						Text: "Cancel",
+						OnClicked: func() {
+							mainWindow.Close()
+						},
+					},
+				},
+			},
+		},
+	}.Run()
+	return nil
+}
 
-		if currentHash != ExpectedHash {
-			fmt.Println("[X] CRITICAL ERROR: Hash mismatch!")
-			fmt.Printf("    Expected: %s\n", ExpectedHash)
-			fmt.Printf("    Actual:   %s\n", currentHash)
-			fmt.Println("[X] This firmware may be corrupted or tampered with. Aborting.")
-			os.Exit(1)
-		}
-		fmt.Println("[+] Verification successful. Proceeding...")
+func consoleApp(firmwarePath string, portName string, ignoreHash bool) error {
+	uf2Path, err := resolveAndValidateUF2Path(firmwarePath, ignoreHash)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return err
 	}
+	fmt.Printf("Flashing firmware %v\n", uf2Path)
 
 	// 1. Find Serial Port
-	var portName string
-	if *portFlag != "" {
-		portName = *portFlag
-	} else {
-		portName = findPicoSerial()
+	fmt.Printf("Finding JSB01 serial port...\n")
+	picoPort := portName
+	if picoPort == "" {
+		availablePorts := findPicoSerial()
+		if len(availablePorts) > 0 {
+			if len(availablePorts) > 1 {
+				fmt.Printf("Multiple JSB01 devices found. Available ports:\n")
+				for _, p := range availablePorts {
+					fmt.Printf(" - %s\n", p)
+				}
+				return fmt.Errorf("multiple JSB01 devices found; please specify a port with -p")
+			} else {
+				picoPort = availablePorts[0]
+				fmt.Printf("Using port %s\n", picoPort)
+			}
+		}
 	}
 
-	if portName != "" {
+	if picoPort != "" {
 		// 2. Enter BOOTSEL mode
-		enterBootselMode(portName)
+		fmt.Printf("Entering BOOTSEL mode on port %s...\n", picoPort)
+		enterBootselMode(picoPort)
 	} else {
-		fmt.Println("[!] Pico serial port not found. Checking if already in BOOTSEL mode...")
+		return fmt.Errorf("Pico serial port not found. Checking if already in BOOTSEL mode...")
 	}
 
 	// 3. Wait for Drive
+	fmt.Printf("Waiting for Pico drive in BOOTSEL mode...\n")
 	mountPoint := findPicoDrive(10 * time.Second)
 	if mountPoint == "" {
-		os.Exit(1)
+		return fmt.Errorf("[!] Failed to find Pico drive in BOOTSEL mode.")
 	}
 
-	// 4. Flash Firmware
+	fmt.Printf("Flashing firmware to %s...\n", mountPoint)
 	flashFirmware(uf2Path, mountPoint)
+	return nil
 }
 
+// ファイルのSHA256ハッシュを計算します。
+// ファイルが存在しない場合や読み取りエラーが発生した場合はエラーを返します。
 func calculateFileHash(filePath string) (string, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -113,36 +194,23 @@ func calculateFileHash(filePath string) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-func findPicoSerial() string {
+// JSB01が接続されているシリアルポートのリストを返します。
+// 通常複数見つかることはないのですが、複数RP2040を接続しているような環境で、意図せずJSB01ではないファームウェアを書き換えないようにするため、呼び出し側でポート選択ができるようにするためです。
+func findPicoSerial() []string {
+	picoPorts := []string{}
 	ports, err := enumerator.GetDetailedPortsList()
-	if err != nil {
-		fmt.Printf("Error enumerating ports: %v\n", err)
-		return ""
-	}
-
-	var foundPorts []string
-	for _, port := range ports {
-		// Check both VID formats just in case (upper/lower)
-		if strings.EqualFold(port.VID, PicoVID) {
-			foundPorts = append(foundPorts, port.Name)
+	if err == nil {
+		for _, port := range ports {
+			// Check both VID formats just in case (upper/lower)
+			if strings.EqualFold(port.VID, PicoVID) {
+				picoPorts = append(picoPorts, port.Name)
+			}
 		}
 	}
-
-	if len(foundPorts) == 0 {
-		return ""
-	}
-
-	if len(foundPorts) > 1 {
-		fmt.Printf("[!] Error: Multiple RP2040 devices detected (%s).\n", strings.Join(foundPorts, ", "))
-		fmt.Println("    Please connect only one device to ensure the correct one is flashed.")
-		os.Exit(1)
-	}
-
-	return foundPorts[0]
+	return picoPorts
 }
 
 func enterBootselMode(portName string) {
-	fmt.Printf("[*] Resetting Pico on %s (1200bps trick)...\n", portName)
 	mode := &serial.Mode{
 		BaudRate: 1200,
 	}
@@ -160,7 +228,6 @@ func enterBootselMode(portName string) {
 }
 
 func findPicoDrive(timeout time.Duration) string {
-	fmt.Printf("[*] Waiting for %s drive to mount...", BootselLabel)
 	deadline := time.Now().Add(timeout)
 
 	for time.Now().Before(deadline) {
@@ -170,16 +237,16 @@ func findPicoDrive(timeout time.Duration) string {
 
 			// Check volume label
 			label, err := getVolumeLabel(driveRoot)
+			if label != "" {
+				// fmt.Printf("Label: %v\n", label)
+			}
 			if err == nil && label == BootselLabel {
-				fmt.Printf("\n[+] Found Pico drive at: %s\n", driveRoot)
 				return driveRoot
 			}
 		}
 
-		fmt.Print(".")
 		time.Sleep(1 * time.Second)
 	}
-	fmt.Println("\n[!] Timeout: Pico drive not found.")
 	return ""
 }
 
@@ -207,29 +274,25 @@ func getVolumeLabel(driveRoot string) (string, error) {
 	return windows.UTF16ToString(volumeName[:]), nil
 }
 
-func flashFirmware(uf2Path, mountPoint string) {
+func flashFirmware(uf2Path, mountPoint string) error {
 	destPath := filepath.Join(mountPoint, filepath.Base(uf2Path))
-	fmt.Printf("[*] Copying %s to %s...\n", filepath.Base(uf2Path), destPath)
 
 	err := copyFile(uf2Path, destPath)
 	if err == nil {
-		fmt.Println("[SUCCESS] Flash complete! Pico should restart automatically.")
-		return
+		return nil
 	}
 
 	// If error occurred, check if drive is gone (success case usually)
 	if _, statErr := os.Stat(mountPoint); os.IsNotExist(statErr) {
-		fmt.Println("\n[OK] Flash finished (device rebooted and disconnected).")
-		return
+		return nil
 	}
 
 	// Also check checking volume label again might fail if device is gone
 	if _, err := getVolumeLabel(mountPoint); err != nil {
-		fmt.Println("\n[OK] Flash finished (device disconnected).")
-		return
+		return nil
 	}
 
-	fmt.Printf("\n[!] Error during copy: %v\n", err)
+	return fmt.Errorf("\n[!] Error during copy: %v\n", err)
 }
 
 func copyFile(src, dst string) error {
@@ -250,4 +313,43 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	return nil
+}
+
+// resolveAndValidateUF2Path は、コマンドライン引数から uf2 ファイルパスを解決し、
+// ファイル存在確認とハッシュ検証を行います。
+//
+// args: コマンドライン引数のスライス
+//
+// 戻り値: 完全な uf2 ファイルパスとエラー
+// 自動選択の場合（args が空）、ハッシュ検証も行われます。
+func resolveAndValidateUF2Path(firmware string, ignoreHash bool) (string, error) {
+	var uf2Path string
+	if firmware != "" {
+		uf2Path = firmware
+	} else {
+		// Try to find firmware.uf2 in the executable directory
+		ex, err := os.Executable()
+		if err != nil {
+			return "", err
+		}
+		baseDir := filepath.Dir(ex)
+		uf2Path = filepath.Join(baseDir, "firmware.uf2")
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(uf2Path); os.IsNotExist(err) {
+		return "", fmt.Errorf("file not found: %s", uf2Path)
+	}
+
+	// Hash Check (only if file was automatically selected)
+	if firmware == "" && !ignoreHash {
+		currentHash, err := calculateFileHash(uf2Path)
+		if err != nil {
+			return "", fmt.Errorf("error calculating hash: %v", err)
+		}
+		if currentHash != ExpectedHash {
+			return "", fmt.Errorf("hash mismatch for %s: expected %s, got %s", uf2Path, ExpectedHash, currentHash)
+		}
+	}
+	return uf2Path, nil
 }

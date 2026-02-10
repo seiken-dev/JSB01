@@ -1,14 +1,17 @@
 version: '3'
 
 vars:
-  VERSION: "1.0RC3"
+  APPNAME: "jsb01-flasher"
+  VERSION: "1.0RC5"
+  OUTDIR: "jsb01-firmware"
 
 tasks:
   build:
     desc: Build the flasher executable
     cmds:
-      - go build -ldflags="-s -w" -o jsb01-firmware/jsb01-flasher.exe
-      - cp docs/README.txt jsb01-firmware/
-      - cp ../FIrmware/.pio/build/rpipico/firmware.uf2 jsb01-firmware/
-      - 7z a jsb01-firmware-{{.VERSION}}.zip jsb01-firmware/*
+      - rsrc -manifest {{.APPNAME}}.manifest -o rsrc.syso
+      - go build -ldflags="-s -w -H windowsgui" -o {{.OUTDIR}}/{{.APPNAME}}.exe
+      - cp docs/README.txt {{.OUTDIR}}/
+      - cp ../Firmware/.pio/build/rpipico/firmware.uf2 {{.OUTDIR}}/
+      - 7z a {{.OUTDIR}}-{{.VERSION}}.zip {{.OUTDIR}}/*
 

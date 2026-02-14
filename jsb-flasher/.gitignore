@@ -1,4 +1,3 @@
-jsb01-firmware
-
-rsrc.syso
 *.zip
+bin
+obj

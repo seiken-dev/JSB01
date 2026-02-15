@@ -12,6 +12,8 @@ tasks:
       - cp ../Firmware/.pio/build/rpipico/firmware.uf2 ./
       - dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
       - cp docs/README.txt {{.OUTDIR}}/
-      - 7z a {{.OUTDIR}}-{{.VERSION}}.zip {{.OUTDIR}}/*
+      - mkdir {{.APPNAME}}-{{.VERSION}}
+      - cp {{.OUTDIR}}/* {{.APPNAME}}-{{.VERSION}}/
+      - 7z a {{.APPNAME}}-{{.VERSION}}.zip {{.APPNAME}}-{{.VERSION}}
       - rm firmware.uf2
 

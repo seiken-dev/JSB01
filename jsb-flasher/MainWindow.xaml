@@ -5,17 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:jsb_flasher"
         mc:Ignorable="d"
-        Title="Pico Firmware Flasher" Height="300" Width="400" WindowStartupLocation="CenterScreen">
+        Title="Pico Firmware Flasher" Height="300" Width="400" MinHeight="280" MinWidth="380" WindowStartupLocation="CenterScreen">
     <Grid>
         <StackPanel Margin="20" Orientation="Vertical">
             <TextBlock Text="Pico Firmware Flasher" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
             
-            <TextBlock Text="利用可能なシリアルポート:" Margin="0,0,0,5"/>
-            <ListBox x:Name="ItemListBox" Height="120" Margin="0,0,0,20" BorderThickness="1" BorderBrush="Gray"/>
+            <Label Content="利用可能なシリアルポート(_P):" Margin="0,0,0,5" Target="{Binding ElementName=ItemListBox}"/>
+            <ListBox x:Name="ItemListBox" MinHeight="100" Margin="0,0,0,20" BorderThickness="1" BorderBrush="Gray"/>
             
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button Name="OkButton" Content="OK" Width="80" Margin="10" Click="OkButton_Click" Padding="5"/>
-                <Button Name="CancelButton" Content="Cancel" Width="80" Margin="10" Click="CancelButton_Click" Padding="5"/>
+                <Button Name="OkButton" Content="OK" Width="80" Margin="10" Click="OkButton_Click" Padding="5" IsDefault="True"/>
+                <Button Name="CancelButton" Content="Cancel" Width="80" Margin="10" Click="CancelButton_Click" Padding="5" IsCancel="True"/>
             </StackPanel>
         </StackPanel>
     </Grid>

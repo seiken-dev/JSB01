@@ -2,34 +2,35 @@
 #define COMPASS_H
 
 #include <Arduino.h>
-#include <Adafruit_QMC5883P.h>
 #include <EEPROM.h>
+#include <SparkFun_MMC5983MA_Arduino_Library.h>
 
 class Compass {
-public:
-    Compass();
-    bool begin();
-    float getHeading();
-    void calibrate();
+ public:
+  Compass();
+  bool begin();
+  float getHeading();
+  void calibrate();
 
-private:
-    Adafruit_QMC5883P qmc;
-    int16_t x_offset;
-    int16_t y_offset;
-    int16_t z_offset;
+ private:
+  SFE_MMC5983MA mag;
+  double x_offset;
+  double y_offset;
+  double z_offset;
 
-    struct CalibrationData {
-        uint32_t signature;
-        int16_t x_off;
-        int16_t y_off;
-        int16_t z_off;
-    };
+  struct CalibrationData {
+    uint32_t signature;
+    double x_off;
+    double y_off;
+    double z_off;
+  };
 
-    static const uint32_t EEPROM_SIGNATURE = 0xAB12CD34;
-    static const int EEPROM_ADDR = 0;
+  static const uint32_t EEPROM_SIGNATURE = 0xAB12CD34;
+  static const int EEPROM_ADDR = 0;
 
-    bool loadCalibration();
-    void saveCalibration();
+  bool loadCalibration();
+  void saveCalibration();
+  bool get_xyz(double* x, double* y, double* z);
 };
 
 #endif

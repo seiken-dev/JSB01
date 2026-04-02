@@ -5,16 +5,12 @@ Compass::Compass() : x_offset(0), y_offset(0), z_offset(0) {}
 bool Compass::begin() {
   EEPROM.begin(512);
 
-  if (!qmc.begin()) {
+  if (!mag.begin()) {
     return false;
   }
-  Wire.setClock(100000); // Set I2C frequency to 100kHz
+  Wire.setClock(100000);  // Set I2C frequency to 100kHz
 
-  qmc.setRange(QMC5883P_RANGE_8G);
-  qmc.setMode(QMC5883P_MODE_CONTINUOUS);
-  qmc.setODR(QMC5883P_ODR_50HZ);
-  qmc.setOSR(QMC5883P_OSR_4);
-
+  mag.softReset();
   if (!loadCalibration()) {
     calibrate();
   }
@@ -22,58 +18,75 @@ bool Compass::begin() {
 }
 
 void Compass::calibrate() {
-  constexpr int CalibrationTime = 30000; // 30 seconds
-  Serial.println("Calibrating Magnetometer...");
-  Serial.println("Rotate the sensor in all directions for 30 seconds.");
-  int16_t xMin = 32767, yMin = 32767, zMin = 32767;
-  int16_t xMax = -32768, yMax = -32768, zMax = -32768;
+  constexpr int CalibrationTime = 30000;  // 30 seconds
+  double minX = 1e9, maxX = -1e9;
+  double minY = 1e9, maxY = -1e9;
+  double x, y, z;
 
-  unsigned long startTime = millis();
-  while (millis() - startTime < CalibrationTime) {
-    int16_t x, y, z;
-    if (qmc.getRawMagnetic(&x, &y, &z)) {
-      if (x < xMin) xMin = x;
-      if (y < yMin) yMin = y;
-      if (z < zMin) zMin = z;
-      if (x > xMax) xMax = x;
-      if (y > yMax) yMax = y;
-      if (z > zMax) zMax = z;
-    }
-    delay(10);
+  Serial.println("Hard iron calibration: rotate the sensor slowly in a full circle.");
+  Serial.print("Collecting data for ");
+  Serial.print(CalibrationTime / 1000);
+  Serial.println(" seconds...");
+
+  unsigned long startMs = millis();
+  while (millis() - startMs < (unsigned long)CalibrationTime) {
+    get_xyz(&x, &y, &z);
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+    delay(50);
   }
 
-  x_offset = (xMax + xMin) / 2;
-  y_offset = (yMax + yMin) / 2;
-  z_offset = (zMax + zMin) / 2;
+  x_offset = (maxX + minX) / 2.0;
+  y_offset = (maxY + minY) / 2.0;
 
-  Serial.print("Calibration Complete! Offsets -> X: ");
-  Serial.print(x_offset);
-  Serial.print(" Y: ");
-  Serial.print(y_offset);
-  Serial.print(" Z: ");
-  Serial.println(z_offset);
-
+  Serial.println("Calibration done.");
+  Serial.print("  offset X: ");
+  Serial.println(x_offset, 6);
+  Serial.print("  offset Y: ");
+  Serial.println(y_offset, 6);
   saveCalibration();
 }
 
+/**
+ * @brief MMC5983MAから磁気センサの値を取得する関数
+ * @param x 磁気センサのX軸の値を格納する変数へのポインタ
+ * @param y 磁気センサのY軸の値を格納する変数へのポインタ
+ * @param z 磁気センサのZ軸の値を格納する変数へのポインタ
+ * @return 取得に成功した場合はtrue、失敗した場合はfalse
+ * @note
+ * MMC5983MAはSET/RESET動作を行うことでオフセットをキャンセルすることができる。
+ * ただし、SET/RESET動作は磁気センサの値を大きく変化させるため、SET/RESET動作を行う前後の値を取得して平均を取ることで、より安定した値を得ることができる。さらに、オフセットキャンセル後の値を131072で割ることで、磁場強度をガウス単位で得ることができる。
+ */
+
+bool Compass::get_xyz(double* x, double* y, double* z) {
+  uint32_t setX = 0, setY = 0, setZ = 0;
+  uint32_t resetX = 0, resetY = 0, resetZ = 0;
+
+  mag.performSetOperation();
+  mag.getMeasurementXYZ(&setX, &setY, &setZ);
+
+  mag.performResetOperation();
+  mag.getMeasurementXYZ(&resetX, &resetY, &resetZ);
+
+  // オフセットキャンセル: (SET - RESET) / 2 + 131072
+  *x = ((double)setX - (double)resetX) / 2.0 / 131072.0;
+  *y = ((double)setY - (double)resetY) / 2.0 / 131072.0;
+  *z = ((double)setZ - (double)resetZ) / 2.0 / 131072.0;
+  return true;
+}
+
 float Compass::getHeading() {
-  int16_t x, y, z;
+  double x, y, z;
+  get_xyz(&x, &y, &z);
+  double heading = 0;
+  heading = atan2(x, 0 - y);
 
-  if (qmc.getRawMagnetic(&x, &y, &z)) {
-    x -= x_offset;
-    y -= y_offset;
-    z -= z_offset;
-
-    float heading = atan2(y, x);
-    float headingDegrees = heading * 180.0 / PI;
-    headingDegrees += 180;
-
-    if (headingDegrees >= 360) headingDegrees -= 360;
-    if (headingDegrees < 0) headingDegrees += 360;
-
-    return headingDegrees;
-  }
-  return -1.0;
+  heading /= PI;
+  heading *= 180;
+  heading += 180;
+  return (float)heading;
 }
 
 bool Compass::loadCalibration() {

@@ -20,7 +20,7 @@ public partial class MainWindow : Window
 {
     private const string PicoVID = "VID_2E8A";
     private const string BootselLabel = "RPI-RP2";
-    private const string ExpectedHash = "808e6eb9b279b38ef03851c608afe5d2357fad40f70d9601e472224c800a32ec";
+    private const string ExpectedHash = "066562e5312239a85f2ba0415688c7a03c6d2d46cecc9045256d35c49d9191ce";
 
     private string _selectedPort = "";
     private string _firmwarePath = "";

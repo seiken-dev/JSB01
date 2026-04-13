@@ -1,14 +1,12 @@
 #include "Compass.h"
 
-Compass::Compass() : x_offset(0), y_offset(0), z_offset(0) {}
-
 bool Compass::begin() {
   EEPROM.begin(512);
-
+  Serial.println("Initializing compass...");
+  Wire.setClock(100000);  // Set I2C frequency to 100kHz
   if (!mag.begin()) {
     return false;
   }
-  Wire.setClock(100000);  // Set I2C frequency to 100kHz
 
   mag.softReset();
   if (!loadCalibration()) {
@@ -31,6 +29,13 @@ void Compass::calibrate() {
   unsigned long startMs = millis();
   while (millis() - startMs < (unsigned long)CalibrationTime) {
     get_xyz(&x, &y, &z);
+    Serial.print("  X: ");
+    Serial.print(x, 6);
+    Serial.print(" Y: ");
+    Serial.print(y, 6);
+    Serial.print(" Z: ");
+    Serial.println(z, 6);
+
     if (x < minX) minX = x;
     if (x > maxX) maxX = x;
     if (y < minY) minY = y;
@@ -81,11 +86,22 @@ float Compass::getHeading() {
   double x, y, z;
   get_xyz(&x, &y, &z);
   double heading = 0;
-  heading = atan2(x, 0 - y);
+  x = x - x_offset;
+  y = y - y_offset;
 
+  heading = atan2(x, 0 - y);
   heading /= PI;
   heading *= 180;
   heading += 180;
+
+  // JSB01ボードの向きを補正
+  if (heading > 90 && heading < 360) {
+    heading -= 90;
+  } else {
+      heading += 270;
+  }
+  Serial.print(":");
+  Serial.println(heading);
   return (float)heading;
 }
 
@@ -106,6 +122,7 @@ bool Compass::loadCalibration() {
     Serial.println(z_offset);
     return true;
   }
+  Serial.println("No valid calibration data found in EEPROM.");
   return false;
 }
 

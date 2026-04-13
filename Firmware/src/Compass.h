@@ -2,12 +2,12 @@
 #define COMPASS_H
 
 #include <Arduino.h>
+#include <Wire.h>
 #include <EEPROM.h>
 #include <SparkFun_MMC5983MA_Arduino_Library.h>
 
 class Compass {
  public:
-  Compass();
   bool begin();
   float getHeading();
   void calibrate();

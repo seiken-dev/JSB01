@@ -185,9 +185,8 @@ int headingToVibration(float heading) {
 
   // 北(0)からの距離(0~4)
   int diff = (sector > 4) ? (8 - sector) : sector;
-
   // 北(0)が最も長く(500ms)、南(4)が最も短い(100ms)
-  Serial.printf("%03d\r", (500 - diff * 100));
+  // Serial.printf("%03d\r", (500 - diff * 100));
   return 500 - diff * 100;
 }
 
